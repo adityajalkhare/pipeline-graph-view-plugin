@@ -104,11 +104,11 @@ public class StackTraceAnnotator extends ConsoleSectionAnnotator {
 
 ## Which to use
 
-| | `ConsoleSectionRule` | `ConsoleSectionAnnotator` |
-|---|---|---|
-| Detection | Regex pair (start / end) | Line-by-line with state |
-| Runs | Client-side (frontend) | Server-side |
-| Title | First capture group or full line | Set dynamically in `detect()` |
-| Use for | Simple delimited output (npm, pip, etc.) | Context-dependent grouping (stack traces, test suites) |
+|           | `ConsoleSectionRule`                     | `ConsoleSectionAnnotator`                              |
+| --------- | ---------------------------------------- | ------------------------------------------------------ |
+| Detection | Regex pair (start / end)                 | Line-by-line with state                                |
+| Runs      | Client-side (frontend)                   | Server-side                                            |
+| Title     | First capture group or full line         | Set dynamically in `detect()`                          |
+| Use for   | Simple delimited output (npm, pip, etc.) | Context-dependent grouping (stack traces, test suites) |
 
 `##[group]` / `::group::` markers in console output are always detected regardless of any registered extensions.

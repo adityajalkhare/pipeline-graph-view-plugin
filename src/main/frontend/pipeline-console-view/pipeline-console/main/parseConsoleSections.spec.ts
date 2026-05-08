@@ -91,7 +91,11 @@ describe("parseConsoleSections", () => {
     });
 
     it("trims trailing whitespace in title", () => {
-      const lines = ["##[group]Install Dependencies  ", "npm ci", "##[endgroup]"];
+      const lines = [
+        "##[group]Install Dependencies  ",
+        "npm ci",
+        "##[endgroup]",
+      ];
       const result = parseConsoleSections(lines);
       const group = result[0] as ConsoleSectionGroup;
       expect(group.title).toBe("Install Dependencies");
@@ -120,11 +124,7 @@ describe("parseConsoleSections", () => {
 
   describe("mixed syntax", () => {
     it("handles ##[group] opened and ::endgroup:: closed", () => {
-      const lines = [
-        "##[group]Mixed",
-        "inside",
-        "::endgroup::",
-      ];
+      const lines = ["##[group]Mixed", "inside", "::endgroup::"];
       const result = parseConsoleSections(lines);
       expect(result).toHaveLength(1);
       const group = result[0] as ConsoleSectionGroup;
@@ -133,11 +133,7 @@ describe("parseConsoleSections", () => {
     });
 
     it("handles ::group:: opened and ##[endgroup] closed", () => {
-      const lines = [
-        "::group::Mixed2",
-        "inside",
-        "##[endgroup]",
-      ];
+      const lines = ["::group::Mixed2", "inside", "##[endgroup]"];
       const result = parseConsoleSections(lines);
       const group = result[0] as ConsoleSectionGroup;
       expect(group.title).toBe("Mixed2");
@@ -172,11 +168,7 @@ describe("parseConsoleSections", () => {
     });
 
     it("detects marker with leading whitespace", () => {
-      const lines = [
-        "  ##[group]Indented",
-        "inside",
-        "  ##[endgroup]",
-      ];
+      const lines = ["  ##[group]Indented", "inside", "  ##[endgroup]"];
       const result = parseConsoleSections(lines);
       expect(result).toHaveLength(1);
       expect((result[0] as ConsoleSectionGroup).title).toBe("Indented");
@@ -308,11 +300,7 @@ describe("parseConsoleSections", () => {
 
   describe("unclosed groups", () => {
     it("leaves endIndex as -1 for unclosed group", () => {
-      const lines = [
-        "##[group]Streaming",
-        "line 1",
-        "line 2",
-      ];
+      const lines = ["##[group]Streaming", "line 1", "line 2"];
       const result = parseConsoleSections(lines);
       expect(result).toHaveLength(1);
       const group = result[0] as ConsoleSectionGroup;
@@ -321,11 +309,7 @@ describe("parseConsoleSections", () => {
     });
 
     it("handles unclosed nested group", () => {
-      const lines = [
-        "##[group]Outer",
-        "##[group]Inner",
-        "still going",
-      ];
+      const lines = ["##[group]Outer", "##[group]Inner", "still going"];
       const result = parseConsoleSections(lines);
       const outer = result[0] as ConsoleSectionGroup;
       expect(outer.endIndex).toBe(-1);
@@ -336,11 +320,7 @@ describe("parseConsoleSections", () => {
 
   describe("stray endgroup", () => {
     it("treats stray ##[endgroup] as a plain line", () => {
-      const lines = [
-        "some output",
-        "##[endgroup]",
-        "more output",
-      ];
+      const lines = ["some output", "##[endgroup]", "more output"];
       const result = parseConsoleSections(lines);
       expect(result).toHaveLength(3);
       expect(result[1]).toMatchObject({

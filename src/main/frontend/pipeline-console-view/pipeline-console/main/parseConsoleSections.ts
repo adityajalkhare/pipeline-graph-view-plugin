@@ -64,9 +64,7 @@ const GROUP_MARKER_RE = /##\[group\]|::group::/;
  * Lines between markers are grouped; all other lines remain flat.
  * Supports nesting. Unclosed groups get endIndex = -1.
  */
-export function parseConsoleSections(
-  lines: string[],
-): ConsoleSectionNode[] {
+export function parseConsoleSections(lines: string[]): ConsoleSectionNode[] {
   const root: ConsoleSectionNode[] = [];
   // Stack of open groups: each entry is the children array of the current group.
   const stack: { group: ConsoleSectionGroup; parent: ConsoleSectionNode[] }[] =

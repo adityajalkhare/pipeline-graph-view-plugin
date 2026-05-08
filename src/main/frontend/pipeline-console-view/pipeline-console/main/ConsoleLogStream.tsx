@@ -1,12 +1,14 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useMemo, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { ConsoleLine } from "./ConsoleLine.tsx";
+import { ConsoleSectionNodeRenderer } from "./ConsoleSection.tsx";
+import { parseConsoleSections } from "./parseConsoleSections.ts";
 import {
   POLL_INTERVAL,
   Result,
   StepLogBufferInfo,
   TAIL_CONSOLE_LOG,
 } from "./PipelineConsoleModel.tsx";
+import "./console-section.scss";
 
 export default function ConsoleLogStream({
   tailLogs,
@@ -87,17 +89,25 @@ export default function ConsoleLogStream({
     setScrollToLogLine(false);
   }, [scrollToLogLine, stepId, logBuffer.lines]);
 
+  const sectionTree = useMemo(
+    () => parseConsoleSections(logBuffer.lines),
+    [logBuffer.lines],
+  );
+
   return (
     <div
       role="log"
       ref={logRef}
       style={{ scrollMarginBlockEnd: "var(--section-padding)" }}
     >
-      {logBuffer.lines.map((content, index) => (
-        <ConsoleLine
-          key={index}
-          lineNumber={String(index)}
-          content={content}
+      {sectionTree.map((node) => (
+        <ConsoleSectionNodeRenderer
+          key={
+            node.kind === "line"
+              ? `line-${node.index}`
+              : `section-${node.startIndex}`
+          }
+          node={node}
           stepId={stepId}
           startByte={logBuffer.startByte}
           stopTailingLogs={stopTailingLogs}

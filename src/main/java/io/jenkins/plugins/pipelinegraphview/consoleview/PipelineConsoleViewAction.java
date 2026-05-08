@@ -387,6 +387,27 @@ public class PipelineConsoleViewAction extends Tab {
     }
 
     @GET
+    @WebMethod(name = "consoleSectionRules")
+    public void getConsoleSectionRules(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
+        run.checkPermission(Item.READ);
+        rsp.setStatus(200);
+        rsp.setContentType("application/json;charset=UTF-8");
+        rsp.setHeader("Cache-Control", "private, max-age=300");
+
+        List<JSONObject> rules = new ArrayList<>();
+        for (ConsoleSectionRule rule : ConsoleSectionRule.all()) {
+            JSONObject obj = new JSONObject();
+            obj.put("id", rule.getId());
+            obj.put("displayName", rule.getDisplayName());
+            obj.put("startPattern", rule.getStartPattern());
+            obj.put("endPattern", rule.getEndPattern());
+            obj.put("enabledByDefault", rule.isEnabledByDefault());
+            rules.add(obj);
+        }
+        net.sf.json.JSONArray.fromObject(rules).write(rsp.getWriter());
+    }
+
+    @GET
     @WebMethod(name = "tree")
     public void getTree(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException, ServletException {
         run.checkPermission(Item.READ);

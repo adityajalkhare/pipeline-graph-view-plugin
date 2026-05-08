@@ -4,6 +4,8 @@ import {
   parseConsoleSections,
   ConsoleSectionGroup,
   ConsoleSectionLine,
+  compileSectionRules,
+  applyRulesToSections,
 } from "./parseConsoleSections.ts";
 
 describe("parseConsoleSections", () => {
@@ -331,5 +333,152 @@ describe("parseConsoleSections", () => {
       expect(result).toHaveLength(3);
       expect(result.every((n) => n.kind === "line")).toBe(true);
     });
+  });
+});
+
+describe("compileSectionRules", () => {
+  it("compiles valid rules", () => {
+    const rules = compileSectionRules([
+      {
+        id: "test",
+        displayName: "Test",
+        startPattern: "^start$",
+        endPattern: "^end$",
+      },
+    ]);
+    expect(rules).toHaveLength(1);
+    expect(rules[0].startPattern.test("start")).toBe(true);
+    expect(rules[0].endPattern.test("end")).toBe(true);
+  });
+
+  it("skips rules with invalid regex", () => {
+    const rules = compileSectionRules([
+      {
+        id: "bad",
+        displayName: "Bad",
+        startPattern: "^valid$",
+        endPattern: "[invalid",
+      },
+      {
+        id: "good",
+        displayName: "Good",
+        startPattern: "^start$",
+        endPattern: "^end$",
+      },
+    ]);
+    expect(rules).toHaveLength(1);
+    expect(rules[0].id).toBe("good");
+  });
+
+  it("returns empty for empty input", () => {
+    expect(compileSectionRules([])).toEqual([]);
+  });
+});
+
+describe("applyRulesToSections", () => {
+  const mavenRules = compileSectionRules([
+    {
+      id: "maven",
+      displayName: "Maven Phase",
+      startPattern: "^\\[INFO\\] --- (.+) ---$",
+      endPattern: "^\\[INFO\\] --- .+ ---|^\\[INFO\\] -+$",
+    },
+  ]);
+
+  it("creates a group from matching start/end lines", () => {
+    const lines = [
+      "[INFO] --- maven-compiler-plugin:3.8.1:compile (default) ---",
+      "[INFO] Compiling 5 source files",
+      "[INFO] All files up to date",
+      "[INFO] -------------------------------------------------------",
+    ];
+    const flat = parseConsoleSections(lines);
+    const result = applyRulesToSections(flat, mavenRules);
+    expect(result).toHaveLength(2);
+    const group = result[0] as ConsoleSectionGroup;
+    expect(group.kind).toBe("group");
+    expect(group.title).toBe("maven-compiler-plugin:3.8.1:compile (default)");
+    expect(group.children).toHaveLength(2);
+    // The end line is not inside the group.
+    expect(result[1]).toMatchObject({ kind: "line", index: 3 });
+  });
+
+  it("chains sequential groups when end line matches new start", () => {
+    const lines = [
+      "[INFO] --- maven-compiler-plugin:3.8.1:compile ---",
+      "compiling...",
+      "[INFO] --- maven-surefire-plugin:2.22:test ---",
+      "testing...",
+      "[INFO] -------------------------------------------------------",
+    ];
+    const flat = parseConsoleSections(lines);
+    const result = applyRulesToSections(flat, mavenRules);
+    expect(result).toHaveLength(3);
+    expect((result[0] as ConsoleSectionGroup).title).toBe(
+      "maven-compiler-plugin:3.8.1:compile",
+    );
+    expect((result[0] as ConsoleSectionGroup).children).toHaveLength(1);
+    expect((result[1] as ConsoleSectionGroup).title).toBe(
+      "maven-surefire-plugin:2.22:test",
+    );
+    expect((result[1] as ConsoleSectionGroup).children).toHaveLength(1);
+  });
+
+  it("passes through marker-based groups unchanged", () => {
+    const lines = [
+      "##[group]Custom",
+      "inside custom",
+      "##[endgroup]",
+      "[INFO] --- maven-compiler-plugin:3.8.1:compile ---",
+      "compiling",
+      "[INFO] -------------------------------------------------------",
+    ];
+    const markerParsed = parseConsoleSections(lines);
+    const result = applyRulesToSections(markerParsed, mavenRules);
+    // First is the marker group, second is the maven rule group, third is the end line.
+    expect(result).toHaveLength(3);
+    expect((result[0] as ConsoleSectionGroup).title).toBe("Custom");
+    expect((result[1] as ConsoleSectionGroup).title).toBe(
+      "maven-compiler-plugin:3.8.1:compile",
+    );
+  });
+
+  it("returns nodes unchanged when no rules provided", () => {
+    const lines = ["a", "b", "c"];
+    const flat = parseConsoleSections(lines);
+    const result = applyRulesToSections(flat, []);
+    expect(result).toEqual(flat);
+  });
+
+  it("leaves unclosed rule group with endIndex -1", () => {
+    const lines = [
+      "[INFO] --- maven-compiler-plugin:3.8.1:compile ---",
+      "still compiling...",
+    ];
+    const flat = parseConsoleSections(lines);
+    const result = applyRulesToSections(flat, mavenRules);
+    expect(result).toHaveLength(1);
+    const group = result[0] as ConsoleSectionGroup;
+    expect(group.endIndex).toBe(-1);
+    expect(group.children).toHaveLength(1);
+  });
+
+  it("uses displayName as fallback when no capture group", () => {
+    const noCapture = compileSectionRules([
+      {
+        id: "tf",
+        displayName: "Terraform Plan",
+        startPattern: "^Terraform will perform",
+        endPattern: "^Plan: ",
+      },
+    ]);
+    const lines = [
+      "Terraform will perform the following actions:",
+      "  + resource",
+      "Plan: 1 to add",
+    ];
+    const flat = parseConsoleSections(lines);
+    const result = applyRulesToSections(flat, noCapture);
+    expect((result[0] as ConsoleSectionGroup).title).toBe("Terraform Plan");
   });
 });

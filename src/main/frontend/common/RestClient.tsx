@@ -152,6 +152,27 @@ export async function getConsoleBuildOutput(
   }
 }
 
+export interface ConsoleSectionRuleData {
+  id: string;
+  displayName: string;
+  startPattern: string;
+  endPattern: string;
+  enabledByDefault: boolean;
+}
+
+export async function getConsoleSectionRules(
+  url: string,
+): Promise<ConsoleSectionRuleData[]> {
+  try {
+    const response = await fetch(`${url}stages/consoleSectionRules`);
+    if (!response.ok) throw response.statusText;
+    return await response.json();
+  } catch (e) {
+    console.error(`Caught error when fetching console section rules: '${e}'`);
+    return [];
+  }
+}
+
 export async function getResourceBundle(
   resource: string,
 ): Promise<ResourceBundle | undefined> {

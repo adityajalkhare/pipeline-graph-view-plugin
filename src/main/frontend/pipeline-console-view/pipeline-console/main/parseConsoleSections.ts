@@ -110,3 +110,143 @@ export function parseConsoleSections(
   // Unclosed groups keep endIndex = -1 (still streaming).
   return root;
 }
+
+/**
+ * A compiled section rule for client-side application.
+ */
+export interface CompiledSectionRule {
+  id: string;
+  displayName: string;
+  startPattern: RegExp;
+  endPattern: RegExp;
+}
+
+/**
+ * Compile rule data from the server into RegExp-bearing objects.
+ * Invalid patterns are silently skipped.
+ */
+export function compileSectionRules(
+  rules: Array<{
+    id: string;
+    displayName: string;
+    startPattern: string;
+    endPattern: string;
+  }>,
+): CompiledSectionRule[] {
+  const compiled: CompiledSectionRule[] = [];
+  for (const rule of rules) {
+    try {
+      compiled.push({
+        id: rule.id,
+        displayName: rule.displayName,
+        startPattern: new RegExp(rule.startPattern),
+        endPattern: new RegExp(rule.endPattern),
+      });
+    } catch {
+      // Skip rules with invalid regex.
+    }
+  }
+  return compiled;
+}
+
+/**
+ * Apply compiled section rules to a flat list of ConsoleSectionNode[].
+ *
+ * Walks the top-level lines, matching start/end patterns to create groups.
+ * Already-grouped nodes (from marker detection) are left untouched.
+ * Rules are applied in order; the first matching rule wins for a given line.
+ */
+export function applyRulesToSections(
+  nodes: ConsoleSectionNode[],
+  rules: CompiledSectionRule[],
+): ConsoleSectionNode[] {
+  if (rules.length === 0) return nodes;
+
+  const result: ConsoleSectionNode[] = [];
+  let activeRule: CompiledSectionRule | null = null;
+  let activeGroup: ConsoleSectionGroup | null = null;
+
+  for (const node of nodes) {
+    // Only process flat lines; pass groups through unchanged.
+    if (node.kind === "group") {
+      if (activeGroup) {
+        activeGroup.children.push(node);
+      } else {
+        result.push(node);
+      }
+      continue;
+    }
+
+    const stripped = node.content.replace(ANSI_RE, "").trimStart();
+
+    // Check if current line ends an active rule-based group.
+    if (activeRule && activeGroup && activeRule.endPattern.test(stripped)) {
+      // The end-line starts a new section of the same rule (e.g. next Maven phase).
+      const startMatch = matchAnyRule(stripped, rules);
+      if (startMatch) {
+        activeGroup.endIndex = node.index;
+        result.push(activeGroup);
+        activeGroup = {
+          kind: "group",
+          title: startMatch.title,
+          startIndex: node.index,
+          endIndex: -1,
+          children: [],
+        };
+        activeRule = startMatch.rule;
+        continue;
+      }
+      activeGroup.endIndex = node.index;
+      result.push(activeGroup);
+      activeGroup = null;
+      activeRule = null;
+      result.push(node);
+      continue;
+    }
+
+    // Check if a new rule-based group starts.
+    if (!activeRule) {
+      const startMatch = matchAnyRule(stripped, rules);
+      if (startMatch) {
+        activeGroup = {
+          kind: "group",
+          title: startMatch.title,
+          startIndex: node.index,
+          endIndex: -1,
+          children: [],
+        };
+        activeRule = startMatch.rule;
+        continue;
+      }
+    }
+
+    if (activeGroup) {
+      activeGroup.children.push(node);
+    } else {
+      result.push(node);
+    }
+  }
+
+  // Close any unclosed rule-based group.
+  if (activeGroup) {
+    result.push(activeGroup);
+  }
+
+  return result;
+}
+
+function matchAnyRule(
+  stripped: string,
+  rules: CompiledSectionRule[],
+): { rule: CompiledSectionRule; title: string } | null {
+  for (const rule of rules) {
+    const m = rule.startPattern.exec(stripped);
+    if (m) {
+      return {
+        rule,
+        title: m[1] || rule.displayName,
+      };
+    }
+  }
+  return null;
+}

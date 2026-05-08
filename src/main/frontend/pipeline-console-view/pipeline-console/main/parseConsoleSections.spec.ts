@@ -90,11 +90,11 @@ describe("parseConsoleSections", () => {
       expect(group.title).toBe("Section");
     });
 
-    it("preserves trailing whitespace in title", () => {
+    it("trims trailing whitespace in title", () => {
       const lines = ["##[group]Install Dependencies  ", "npm ci", "##[endgroup]"];
       const result = parseConsoleSections(lines);
       const group = result[0] as ConsoleSectionGroup;
-      expect(group.title).toBe("Install Dependencies  ");
+      expect(group.title).toBe("Install Dependencies");
     });
   });
 
@@ -146,7 +146,7 @@ describe("parseConsoleSections", () => {
   });
 
   describe("ANSI stripping for detection", () => {
-    it("detects marker wrapped in ANSI codes", () => {
+    it("detects marker wrapped in ANSI codes and preserves ANSI in title", () => {
       const lines = [
         "\x1b[32m##[group]Colored\x1b[0m",
         "inside",
@@ -156,7 +156,19 @@ describe("parseConsoleSections", () => {
       expect(result).toHaveLength(1);
       const group = result[0] as ConsoleSectionGroup;
       expect(group.kind).toBe("group");
-      expect(group.title).toBe("Colored");
+      // Marker stripped, surrounding ANSI preserved for color rendering.
+      expect(group.title).toBe("\x1b[32mColored\x1b[0m");
+    });
+
+    it("preserves ANSI codes placed after the marker", () => {
+      const lines = [
+        "##[group]\x1b[1;34mBold Blue Title\x1b[0m",
+        "inside",
+        "##[endgroup]",
+      ];
+      const result = parseConsoleSections(lines);
+      const group = result[0] as ConsoleSectionGroup;
+      expect(group.title).toBe("\x1b[1;34mBold Blue Title\x1b[0m");
     });
 
     it("detects marker with leading whitespace", () => {
@@ -168,6 +180,38 @@ describe("parseConsoleSections", () => {
       const result = parseConsoleSections(lines);
       expect(result).toHaveLength(1);
       expect((result[0] as ConsoleSectionGroup).title).toBe("Indented");
+    });
+  });
+
+  describe("HTML tag stripping for detection (AnsiColor plugin)", () => {
+    it("detects marker inside HTML span tags", () => {
+      const lines = [
+        '<span style="color: #00CD00;">##[group]Green Title</span>',
+        "inside",
+        '<span style="color: #00CD00;">##[endgroup]</span>',
+      ];
+      const result = parseConsoleSections(lines);
+      expect(result).toHaveLength(1);
+      const group = result[0] as ConsoleSectionGroup;
+      expect(group.kind).toBe("group");
+      // HTML preserved so dangerouslySetInnerHTML can render the color.
+      expect(group.title).toBe(
+        '<span style="color: #00CD00;">Green Title</span>',
+      );
+    });
+
+    it("detects ::group:: inside HTML spans", () => {
+      const lines = [
+        '<span style="color: blue;">::group::Blue Section</span>',
+        "inside",
+        '<span style="color: blue;">::endgroup::</span>',
+      ];
+      const result = parseConsoleSections(lines);
+      expect(result).toHaveLength(1);
+      const group = result[0] as ConsoleSectionGroup;
+      expect(group.title).toBe(
+        '<span style="color: blue;">Blue Section</span>',
+      );
     });
   });
 

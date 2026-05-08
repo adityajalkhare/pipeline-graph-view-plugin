@@ -65,13 +65,34 @@ describe("ConsoleSection", () => {
     currentRunPath: "/jenkins/job/test/1/",
   };
 
-  it("renders closed by default for a closed group", () => {
+  it("renders open by default for a small closed group", () => {
     const group: ConsoleSectionGroup = {
       kind: "group",
       title: "Install",
       startIndex: 0,
       endIndex: 5,
       children: [{ kind: "line", index: 1, content: "npm ci" }],
+    };
+    const { container } = render(
+      <ConsoleSection group={group} {...baseProps} />,
+    );
+    const details = container.querySelector("details");
+    expect(details).toBeTruthy();
+    expect(details!.open).toBe(true);
+  });
+
+  it("renders closed by default when children exceed 25", () => {
+    const children = Array.from({ length: 30 }, (_, i) => ({
+      kind: "line" as const,
+      index: i + 1,
+      content: `line ${i + 1}`,
+    }));
+    const group: ConsoleSectionGroup = {
+      kind: "group",
+      title: "Big Section",
+      startIndex: 0,
+      endIndex: 31,
+      children,
     };
     const { container } = render(
       <ConsoleSection group={group} {...baseProps} />,
@@ -139,12 +160,13 @@ describe("ConsoleSection", () => {
     );
     const summary = container.querySelector("summary")!;
     const details = container.querySelector("details")!;
-    expect(details.open).toBe(false);
-
-    fireEvent.click(summary);
+    // Small group defaults to open
     expect(details.open).toBe(true);
 
     fireEvent.click(summary);
     expect(details.open).toBe(false);
+
+    fireEvent.click(summary);
+    expect(details.open).toBe(true);
   });
 });

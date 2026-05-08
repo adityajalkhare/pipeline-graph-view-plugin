@@ -4,7 +4,11 @@ import {
   ConsoleSectionGroup,
   ConsoleSectionNode,
 } from "./parseConsoleSections.ts";
+import { makeReactChildren, tokenizeANSIString } from "./Ansi.tsx";
 import { ConsoleLine } from "./ConsoleLine.tsx";
+
+/** Sections with more children than this default to collapsed. */
+const COLLAPSE_THRESHOLD = 25;
 
 export interface ConsoleSectionProps {
   group: ConsoleSectionGroup;
@@ -22,16 +26,41 @@ export const ConsoleSection = memo(function ConsoleSection({
   currentRunPath,
 }: ConsoleSectionProps) {
   // Unclosed groups (still streaming) default to open.
-  const [open, setOpen] = useState(group.endIndex === -1);
+  // Closed groups with many children default to collapsed.
+  const [open, setOpen] = useState(
+    group.endIndex === -1 || group.children.length <= COLLAPSE_THRESHOLD,
+  );
 
   return (
     <details
       open={open}
-      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+      onToggle={(e) => {
+        e.stopPropagation();
+        setOpen((e.target as HTMLDetailsElement).open);
+      }}
       className="pgv-console-section"
     >
       <summary className="pgv-console-section__summary">
-        <span className="pgv-console-section__title">{group.title}</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512"
+          className="pgv-console-section__chevron"
+        >
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="48"
+            d="M184 112l144 144-144 144"
+          />
+        </svg>
+        <span className="pgv-console-section__title">
+          {makeReactChildren(
+            tokenizeANSIString(group.title),
+            `section-title-${group.startIndex}`,
+          )}
+        </span>
         <span className="pgv-console-section__count">
           {group.children.length}{" "}
           {group.children.length === 1 ? "line" : "lines"}

@@ -25,14 +25,6 @@
     display: none;
   }
 
-  &::before {
-    content: "▶";
-    font-size: 0.6em;
-    transition: transform 0.15s ease;
-    display: inline-block;
-    color: var(--text-color-secondary);
-  }
-
   &:hover {
     background-color: color-mix(
       in srgb,
@@ -40,11 +32,21 @@
       transparent
     );
   }
+}
 
-  details[open] > & {
-    &::before {
-      transform: rotate(90deg);
-    }
+.pgv-console-section__chevron {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+  color: var(--text-color-secondary);
+  transition: var(--standard-transition);
+
+  * {
+    stroke-width: 48px;
+  }
+
+  details[open] > summary > & {
+    rotate: 90deg;
   }
 }
 

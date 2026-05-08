@@ -33,6 +33,10 @@ export type ConsoleSectionNode = ConsoleSectionLine | ConsoleSectionGroup;
 // ANSI escape sequence pattern for stripping before marker detection.
 const ANSI_RE = /\x1b\[[0-9;]*[a-zA-Z]/g;
 
+// HTML tag pattern for stripping before marker detection.
+// progressiveHtml returns HTML; AnsiColor plugin wraps ANSI codes in <span> tags.
+const HTML_TAG_RE = /<[^>]*>/g;
+
 // Start markers: ##[group]Title or ::group::Title
 const GROUP_START_RE = /^(?:##\[group\]|::group::)\s*(.*)$/;
 
@@ -40,13 +44,18 @@ const GROUP_START_RE = /^(?:##\[group\]|::group::)\s*(.*)$/;
 const GROUP_END_RE = /^(?:##\[endgroup\]|::endgroup::)\s*$/;
 
 /**
- * Strip ANSI escape codes and leading whitespace from a line
+ * Strip ANSI escape codes, HTML tags, and leading whitespace from a line
  * for marker detection purposes. The original content is preserved
  * in the output nodes.
  */
 function stripForDetection(line: string): string {
-  return line.replace(ANSI_RE, "").trimStart();
+  return line.replace(ANSI_RE, "").replace(HTML_TAG_RE, "").trimStart();
 }
+
+// Pattern matching the group-start marker itself (no capture).
+// Used to strip the marker from the raw line while preserving surrounding
+// HTML tags and ANSI codes for colored title rendering.
+const GROUP_MARKER_RE = /##\[group\]|::group::/;
 
 /**
  * Parse raw console lines into a tree of sections.
@@ -80,9 +89,12 @@ export function parseConsoleSections(
 
     const startMatch = GROUP_START_RE.exec(stripped);
     if (startMatch) {
+      // Strip the marker from the raw line, preserving surrounding HTML/ANSI
+      // so the title renderer can show colors from the AnsiColor plugin.
+      const title = raw.replace(GROUP_MARKER_RE, "").trim() || "Section";
       const group: ConsoleSectionGroup = {
         kind: "group",
-        title: startMatch[1] || "Section",
+        title,
         startIndex: i,
         endIndex: -1,
         children: [],

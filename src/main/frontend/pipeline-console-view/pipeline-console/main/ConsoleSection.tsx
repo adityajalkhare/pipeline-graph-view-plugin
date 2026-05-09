@@ -1,11 +1,12 @@
 import { memo, useState } from "react";
 
+import { BuildStep } from "../../../common/RestClient.tsx";
+import { makeReactChildren, tokenizeANSIString } from "./Ansi.tsx";
+import { ConsoleLine } from "./ConsoleLine.tsx";
 import {
   ConsoleSectionGroup,
   ConsoleSectionNode,
 } from "./parseConsoleSections.ts";
-import { makeReactChildren, tokenizeANSIString } from "./Ansi.tsx";
-import { ConsoleLine } from "./ConsoleLine.tsx";
 
 /** Sections with more children than this default to collapsed. */
 const COLLAPSE_THRESHOLD = 25;
@@ -16,6 +17,7 @@ export interface ConsoleSectionProps {
   startByte: number;
   stopTailingLogs: () => void;
   currentRunPath: string;
+  buildStep?: BuildStep;
 }
 
 export const ConsoleSection = memo(function ConsoleSection({
@@ -24,6 +26,7 @@ export const ConsoleSection = memo(function ConsoleSection({
   startByte,
   stopTailingLogs,
   currentRunPath,
+  buildStep,
 }: ConsoleSectionProps) {
   // Unclosed groups (still streaming) default to open.
   // Closed groups with many children default to collapsed.
@@ -75,6 +78,7 @@ export const ConsoleSection = memo(function ConsoleSection({
             startByte={startByte}
             stopTailingLogs={stopTailingLogs}
             currentRunPath={currentRunPath}
+            buildStep={buildStep}
           />
         ))}
       </div>
@@ -88,6 +92,7 @@ export interface ConsoleSectionNodeRendererProps {
   startByte: number;
   stopTailingLogs: () => void;
   currentRunPath: string;
+  buildStep?: BuildStep;
 }
 
 export const ConsoleSectionNodeRenderer = memo(
@@ -97,6 +102,7 @@ export const ConsoleSectionNodeRenderer = memo(
     startByte,
     stopTailingLogs,
     currentRunPath,
+    buildStep,
   }: ConsoleSectionNodeRendererProps) {
     if (node.kind === "line") {
       return (
@@ -108,6 +114,7 @@ export const ConsoleSectionNodeRenderer = memo(
           startByte={startByte}
           stopTailingLogs={stopTailingLogs}
           currentRunPath={currentRunPath}
+          buildStep={buildStep}
         />
       );
     }
@@ -119,6 +126,7 @@ export const ConsoleSectionNodeRenderer = memo(
         startByte={startByte}
         stopTailingLogs={stopTailingLogs}
         currentRunPath={currentRunPath}
+        buildStep={buildStep}
       />
     );
   },

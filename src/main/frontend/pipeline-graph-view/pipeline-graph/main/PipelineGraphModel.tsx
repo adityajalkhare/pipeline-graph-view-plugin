@@ -120,7 +120,7 @@ export type LayoutInfo = typeof defaultLayout;
  * The result of the graph layout algorithm
  */
 export interface PositionedGraph {
-  nodeColumns: Array<NodeColumn>;
+  nodes: Array<NodeInfo>;
   connections: Array<CompositeConnection>;
   bigLabels: Array<NodeLabelInfo>;
   timings: Array<NodeLabelInfo>;

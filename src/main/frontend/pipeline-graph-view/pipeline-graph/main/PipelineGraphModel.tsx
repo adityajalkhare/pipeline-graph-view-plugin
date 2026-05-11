@@ -76,6 +76,7 @@ export interface StageNodeInfo extends BaseNodeInfo {
   isPlaceholder: false;
 
   // -- Unique
+  type: "stage";
   stage: StageInfo;
   seqContainerName?: string; // Used within a parallel branch to denote the name of the container of the parallel sequential stages
 }
@@ -85,10 +86,19 @@ export interface PlaceholderNodeInfo extends BaseNodeInfo {
   isPlaceholder: true;
 
   // -- Unique
-  type: "start" | "end" | "counter";
+  type: "start" | "end";
 }
 
-export type NodeInfo = StageNodeInfo | PlaceholderNodeInfo;
+export interface CounterNodeInfo extends BaseNodeInfo {
+  // -- Marker
+  isPlaceholder: true;
+
+  // -- Unique
+  type: "counter";
+  stages: StageInfo[];
+}
+
+export type NodeInfo = StageNodeInfo | PlaceholderNodeInfo | CounterNodeInfo;
 
 export interface NodeColumn {
   topStage?: StageInfo; // Top-most stage for this column, which will have no rendered nodes if it's parallel
@@ -98,10 +108,22 @@ export interface NodeColumn {
   startX: number; // Where to put the branch labels, or if none, the center of the left-most node(s)
 }
 
+export interface ConnectionEdge {
+  x: number;
+  y: number;
+  key: string;
+  type: NodeInfo["type"];
+  firstChildIsSkipped?: boolean;
+  isHidden?: boolean;
+  isParallel?: boolean;
+  isPlaceholder?: boolean;
+  isSkipped?: boolean;
+}
+
 export interface CompositeConnection {
-  sourceNodes: Array<NodeInfo>;
-  destinationNodes: Array<NodeInfo>;
-  skippedNodes: Array<NodeInfo>;
+  sourceNodes: Array<ConnectionEdge>;
+  destinationNodes: Array<ConnectionEdge>;
+  skippedNodes: Array<ConnectionEdge>;
   hasBranchLabels: boolean;
 }
 
@@ -120,7 +142,7 @@ export type LayoutInfo = typeof defaultLayout;
  * The result of the graph layout algorithm
  */
 export interface PositionedGraph {
-  nodeColumns: Array<NodeColumn>;
+  nodes: Array<NodeInfo>;
   connections: Array<CompositeConnection>;
   bigLabels: Array<NodeLabelInfo>;
   timings: Array<NodeLabelInfo>;

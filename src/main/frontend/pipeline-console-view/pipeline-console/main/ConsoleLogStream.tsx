@@ -2,7 +2,10 @@ import "./console-section.scss";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { BuildStep, getConsoleSectionRules } from "../../../common/RestClient.tsx";
+import {
+  BuildStep,
+  getConsoleSectionRules,
+} from "../../../common/RestClient.tsx";
 import { ConsoleSectionNodeRenderer } from "./ConsoleSection.tsx";
 import {
   applyRulesToSections,

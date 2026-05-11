@@ -103,11 +103,14 @@ export default function ConsoleLogStream({
   const [sectionRules, setSectionRules] = useState<CompiledSectionRule[]>([]);
   useEffect(() => {
     let cancelled = false;
-    getConsoleSectionRules(currentRunPath).then((data) => {
-      if (!cancelled) {
-        setSectionRules(compileSectionRules(data));
-      }
-    });
+    getConsoleSectionRules(currentRunPath)
+      .then((data) => {
+        if (!cancelled) {
+          setSectionRules(compileSectionRules(data));
+        }
+        return data;
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };

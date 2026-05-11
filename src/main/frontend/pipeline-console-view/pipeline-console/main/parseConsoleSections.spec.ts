@@ -1,11 +1,10 @@
 /** * @vitest-environment jsdom */
 
 import {
-  parseConsoleSections,
-  ConsoleSectionGroup,
-  ConsoleSectionLine,
-  compileSectionRules,
   applyRulesToSections,
+  compileSectionRules,
+  ConsoleSectionGroup,
+  parseConsoleSections,
 } from "./parseConsoleSections.ts";
 
 describe("parseConsoleSections", () => {

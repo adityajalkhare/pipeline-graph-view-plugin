@@ -36,11 +36,20 @@ export const ConsoleSection = memo(function ConsoleSection({
       open={open}
       onToggle={(e) => {
         e.stopPropagation();
-        setOpen((e.target as HTMLDetailsElement).open);
+        const isOpen = (e.target as HTMLDetailsElement).open;
+        if (isOpen !== open) {
+          setOpen(isOpen);
+        }
       }}
       className="pgv-console-section"
     >
-      <summary className="pgv-console-section__summary">
+      <summary
+        className="pgv-console-section__summary"
+        onClick={(e) => {
+          e.preventDefault();
+          setOpen((prev) => !prev);
+        }}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 512 512"
@@ -66,18 +75,20 @@ export const ConsoleSection = memo(function ConsoleSection({
           {group.children.length === 1 ? "line" : "lines"}
         </span>
       </summary>
-      <div className="pgv-console-section__body">
-        {group.children.map((node) => (
-          <ConsoleSectionNodeRenderer
-            key={nodeKey(node)}
-            node={node}
-            stepId={stepId}
-            startByte={startByte}
-            stopTailingLogs={stopTailingLogs}
-            currentRunPath={currentRunPath}
-          />
-        ))}
-      </div>
+      {open && (
+        <div className="pgv-console-section__body">
+          {group.children.map((node) => (
+            <ConsoleSectionNodeRenderer
+              key={nodeKey(node)}
+              node={node}
+              stepId={stepId}
+              startByte={startByte}
+              stopTailingLogs={stopTailingLogs}
+              currentRunPath={currentRunPath}
+            />
+          ))}
+        </div>
+      )}
     </details>
   );
 });

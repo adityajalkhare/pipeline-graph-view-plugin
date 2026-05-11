@@ -1,7 +1,13 @@
 import { useMemo, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { getConsoleSectionRules } from "../../../common/RestClient.tsx";
 import { ConsoleSectionNodeRenderer } from "./ConsoleSection.tsx";
-import { parseConsoleSections } from "./parseConsoleSections.ts";
+import {
+  applyRulesToSections,
+  CompiledSectionRule,
+  compileSectionRules,
+  parseConsoleSections,
+} from "./parseConsoleSections.ts";
 import {
   POLL_INTERVAL,
   Result,
@@ -89,9 +95,23 @@ export default function ConsoleLogStream({
     setScrollToLogLine(false);
   }, [scrollToLogLine, stepId, logBuffer.lines]);
 
+  const [sectionRules, setSectionRules] = useState<CompiledSectionRule[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    getConsoleSectionRules(currentRunPath).then((data) => {
+      if (!cancelled) {
+        setSectionRules(compileSectionRules(data));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentRunPath]);
+
   const sectionTree = useMemo(
-    () => parseConsoleSections(logBuffer.lines),
-    [logBuffer.lines],
+    () =>
+      applyRulesToSections(parseConsoleSections(logBuffer.lines), sectionRules),
+    [logBuffer.lines, sectionRules],
   );
 
   return (

@@ -169,4 +169,44 @@ describe("ConsoleSection", () => {
     fireEvent.click(summary);
     expect(details.open).toBe(true);
   });
+
+  it("hides content when collapsed and restores on re-expand", () => {
+    const group: ConsoleSectionGroup = {
+      kind: "group",
+      title: "Collapsible Group",
+      startIndex: 0,
+      endIndex: 4,
+      children: [
+        { kind: "line", index: 1, content: "line alpha" },
+        { kind: "line", index: 2, content: "line beta" },
+        { kind: "line", index: 3, content: "line gamma" },
+      ],
+    };
+    const { container } = render(
+      <ConsoleSection group={group} {...baseProps} />,
+    );
+    const summary = container.querySelector("summary")!;
+    const details = container.querySelector("details")!;
+    const body = container.querySelector(".pgv-console-section__body")!;
+
+    // Section shows up in the UI with title and content visible
+    expect(screen.getByText("Collapsible Group")).toBeTruthy();
+    expect(details.open).toBe(true);
+    expect(body.textContent).toContain("line alpha");
+    expect(body.textContent).toContain("line beta");
+    expect(body.textContent).toContain("line gamma");
+
+    // Clicking collapses the section - content is not present
+    fireEvent.click(summary);
+    expect(details.open).toBe(false);
+    expect(container.querySelector(".pgv-console-section__body")).toBeFalsy();
+
+    // Clicking again restores the group
+    fireEvent.click(summary);
+    expect(details.open).toBe(true);
+    const restoredBody = container.querySelector(".pgv-console-section__body")!;
+    expect(restoredBody.textContent).toContain("line alpha");
+    expect(restoredBody.textContent).toContain("line beta");
+    expect(restoredBody.textContent).toContain("line gamma");
+  });
 });

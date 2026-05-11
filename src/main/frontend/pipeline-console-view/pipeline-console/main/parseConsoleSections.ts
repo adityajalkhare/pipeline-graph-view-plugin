@@ -31,6 +31,7 @@ export interface ConsoleSectionGroup {
 export type ConsoleSectionNode = ConsoleSectionLine | ConsoleSectionGroup;
 
 // ANSI escape sequence pattern for stripping before marker detection.
+// eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*[a-zA-Z]/g;
 
 // HTML tag pattern for stripping before marker detection.

@@ -39,12 +39,8 @@ class ConsoleSectionAnnotatorTest {
     @Test
     void markerAnnotatorDetectsEndgroup(JenkinsRule j) {
         MarkerConsoleSectionAnnotator annotator = new MarkerConsoleSectionAnnotator();
-        assertThat(
-                annotator.detect("##[endgroup]").getType(),
-                is(ConsoleSectionAnnotator.SectionBoundary.Type.END));
-        assertThat(
-                annotator.detect("::endgroup::").getType(),
-                is(ConsoleSectionAnnotator.SectionBoundary.Type.END));
+        assertThat(annotator.detect("##[endgroup]").getType(), is(ConsoleSectionAnnotator.SectionBoundary.Type.END));
+        assertThat(annotator.detect("::endgroup::").getType(), is(ConsoleSectionAnnotator.SectionBoundary.Type.END));
     }
 
     @Test
@@ -79,8 +75,7 @@ class ConsoleSectionAnnotatorTest {
 
     @Test
     void sectionBoundaryStartCarriesTitle(JenkinsRule j) {
-        ConsoleSectionAnnotator.SectionBoundary boundary =
-                ConsoleSectionAnnotator.SectionBoundary.start("My Title");
+        ConsoleSectionAnnotator.SectionBoundary boundary = ConsoleSectionAnnotator.SectionBoundary.start("My Title");
         assertThat(boundary.getType(), is(ConsoleSectionAnnotator.SectionBoundary.Type.START));
         assertThat(boundary.getTitle(), is("My Title"));
     }

@@ -16,10 +16,8 @@ public class MarkerConsoleSectionAnnotator extends ConsoleSectionAnnotator {
 
     // Same ANSI stripping as the frontend.
     private static final Pattern ANSI_RE = Pattern.compile("\033\\[[0-9;]*[a-zA-Z]");
-    private static final Pattern GROUP_START =
-            Pattern.compile("^(?:##\\[group\\]|::group::)\\s*(.*)$");
-    private static final Pattern GROUP_END =
-            Pattern.compile("^(?:##\\[endgroup\\]|::endgroup::)\\s*$");
+    private static final Pattern GROUP_START = Pattern.compile("^(?:##\\[group\\]|::group::)\\s*(.*)$");
+    private static final Pattern GROUP_END = Pattern.compile("^(?:##\\[endgroup\\]|::endgroup::)\\s*$");
 
     @Override
     public String getId() {

@@ -16,8 +16,7 @@ class ConsoleSectionRuleTest {
     void extensionPointIsDiscoverable(JenkinsRule j) {
         // No built-in rules shipped; the list should be empty by default.
         // Plugin maintainers contribute their own rules via @Extension.
-        List<ConsoleSectionRule> rules =
-                ConsoleSectionRule.all().stream().toList();
+        List<ConsoleSectionRule> rules = ConsoleSectionRule.all().stream().toList();
         assertThat(rules, is(empty()));
     }
 

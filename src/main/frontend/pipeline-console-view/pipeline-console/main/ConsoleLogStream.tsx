@@ -1,6 +1,8 @@
-import { useMemo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import "./console-section.scss";
 
-import { getConsoleSectionRules } from "../../../common/RestClient.tsx";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+
+import { BuildStep, getConsoleSectionRules } from "../../../common/RestClient.tsx";
 import { ConsoleSectionNodeRenderer } from "./ConsoleSection.tsx";
 import {
   applyRulesToSections,
@@ -14,7 +16,6 @@ import {
   StepLogBufferInfo,
   TAIL_CONSOLE_LOG,
 } from "./PipelineConsoleModel.tsx";
-import "./console-section.scss";
 
 export default function ConsoleLogStream({
   tailLogs,

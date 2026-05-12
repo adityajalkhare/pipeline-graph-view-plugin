@@ -26,6 +26,7 @@ import io.jenkins.plugins.pipelinegraphview.utils.PipelineStep;
 import io.jenkins.plugins.pipelinegraphview.utils.PipelineStepApi;
 import io.jenkins.plugins.pipelinegraphview.utils.PipelineStepList;
 import jakarta.servlet.ServletException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -405,6 +406,61 @@ public class PipelineConsoleViewAction extends Tab {
             rules.add(obj);
         }
         net.sf.json.JSONArray.fromObject(rules).write(rsp.getWriter());
+    }
+
+    @GET
+    @WebMethod(name = "consoleSectionBoundaries")
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SuppressFBWarnings(
+            value = "RV_RETURN_VALUE_IGNORED",
+            justification = "writeLogTo return value not needed; we only care about the buffered output")
+    public void getConsoleSectionBoundaries(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
+        run.checkPermission(Item.READ);
+        String nodeId = req.getParameter("nodeId");
+        if (nodeId == null) {
+            rsp.setStatus(400);
+            rsp.setContentType("application/json;charset=UTF-8");
+            rsp.getWriter().write("[]");
+            return;
+        }
+
+        AnnotatedLargeText<? extends FlowNode> logText = getLogForNode(nodeId);
+        if (logText == null) {
+            rsp.setStatus(200);
+            rsp.setContentType("application/json;charset=UTF-8");
+            rsp.setHeader("Cache-Control", "private, no-store");
+            rsp.getWriter().write("[]");
+            return;
+        }
+
+        // Read raw plain text (not HTML) - annotators expect undecorated output.
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        logText.writeLogTo(0L, baos);
+        String rawLog = baos.toString("UTF-8");
+
+        ConsoleSectionProcessor processor = new ConsoleSectionProcessor(
+                ConsoleSectionAnnotator.all().stream().toList());
+        List<ConsoleSectionProcessor.BoundaryEvent> events = processor.process(rawLog);
+
+        rsp.setStatus(200);
+        rsp.setContentType("application/json;charset=UTF-8");
+        if (logText.isComplete()) {
+            rsp.setHeader("Cache-Control", "private, max-age=300");
+        } else {
+            rsp.setHeader("Cache-Control", "private, no-store");
+        }
+
+        List<JSONObject> jsonEvents = new ArrayList<>();
+        for (ConsoleSectionProcessor.BoundaryEvent event : events) {
+            JSONObject obj = new JSONObject();
+            obj.put("lineIndex", event.getLineIndex());
+            obj.put("type", event.getType());
+            if (event.getTitle() != null) {
+                obj.put("title", event.getTitle());
+            }
+            jsonEvents.add(obj);
+        }
+        net.sf.json.JSONArray.fromObject(jsonEvents).write(rsp.getWriter());
     }
 
     @GET

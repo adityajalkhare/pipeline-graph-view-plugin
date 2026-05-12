@@ -67,9 +67,8 @@ const GROUP_MARKER_RE = /##\[group\]|::group::/;
  */
 export function parseConsoleSections(lines: string[]): ConsoleSectionNode[] {
   const root: ConsoleSectionNode[] = [];
-  // Stack of open groups: each entry is the children array of the current group.
-  const stack: { group: ConsoleSectionGroup; parent: ConsoleSectionNode[] }[] =
-    [];
+  // Stack of open groups.
+  const stack: { group: ConsoleSectionGroup }[] = [];
 
   function current(): ConsoleSectionNode[] {
     return stack.length > 0 ? stack[stack.length - 1].group.children : root;
@@ -99,7 +98,7 @@ export function parseConsoleSections(lines: string[]): ConsoleSectionNode[] {
         children: [],
       };
       current().push(group);
-      stack.push({ group, parent: current() });
+      stack.push({ group });
       continue;
     }
 
@@ -188,7 +187,7 @@ export function applyRulesToSections(
       continue;
     }
 
-    const stripped = node.content.replace(ANSI_RE, "").trimStart();
+    const stripped = stripForDetection(node.content);
 
     // Check if current line ends an active rule-based group.
     if (activeRule && activeGroup && activeRule.endPattern.test(stripped)) {
@@ -260,4 +259,88 @@ function matchAnyRule(
     }
   }
   return null;
+}
+
+/**
+ * Apply server-side annotator boundary events to an existing node tree.
+ *
+ * Boundary events reference plain-text line indices from the backend.
+ * Frontend lines come from progressiveHtml (HTML), so indices may not
+ * align 1:1 if Jenkins injects extra HTML-only lines. We use a
+ * best-effort match: the boundary's lineIndex maps to the Nth
+ * ConsoleSectionLine node (by its `index` field).
+ *
+ * Only flat lines are grouped; already-grouped nodes are passed through.
+ */
+export function applyAnnotatorBoundaries(
+  nodes: ConsoleSectionNode[],
+  boundaries: Array<{
+    lineIndex: number;
+    type: "START" | "END";
+    title?: string;
+  }>,
+): ConsoleSectionNode[] {
+  if (boundaries.length === 0) return nodes;
+
+  // Build a set of line indices for quick lookup.
+  const startMap = new Map<number, string>();
+  const endSet = new Set<number>();
+  for (const b of boundaries) {
+    if (b.type === "START") {
+      startMap.set(b.lineIndex, b.title ?? "Section");
+    } else {
+      endSet.add(b.lineIndex);
+    }
+  }
+
+  const result: ConsoleSectionNode[] = [];
+  let activeGroup: ConsoleSectionGroup | null = null;
+
+  for (const node of nodes) {
+    // Pass existing groups through unchanged.
+    if (node.kind === "group") {
+      if (activeGroup) {
+        activeGroup.children.push(node);
+      } else {
+        result.push(node);
+      }
+      continue;
+    }
+
+    const lineIdx = node.index;
+
+    // Check end before start so a boundary that closes and opens
+    // on the same line works correctly.
+    if (activeGroup && endSet.has(lineIdx)) {
+      activeGroup.endIndex = lineIdx;
+      result.push(activeGroup);
+      activeGroup = null;
+      continue;
+    }
+
+    const startTitle = startMap.get(lineIdx);
+    if (startTitle) {
+      activeGroup = {
+        kind: "group",
+        title: startTitle,
+        startIndex: lineIdx,
+        endIndex: -1,
+        children: [],
+      };
+      continue;
+    }
+
+    if (activeGroup) {
+      activeGroup.children.push(node);
+    } else {
+      result.push(node);
+    }
+  }
+
+  // Close any unclosed annotator group.
+  if (activeGroup) {
+    result.push(activeGroup);
+  }
+
+  return result;
 }

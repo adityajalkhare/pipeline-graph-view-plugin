@@ -180,6 +180,30 @@ export async function getConsoleSectionRules(
   }
 }
 
+export interface ConsoleSectionBoundary {
+  lineIndex: number;
+  type: "START" | "END";
+  title?: string;
+}
+
+export async function getConsoleSectionBoundaries(
+  url: string,
+  nodeId: string,
+): Promise<ConsoleSectionBoundary[]> {
+  try {
+    const response = await fetch(
+      `${url}stages/consoleSectionBoundaries?nodeId=${encodeURIComponent(nodeId)}`,
+    );
+    if (!response.ok) throw response.statusText;
+    return await response.json();
+  } catch (e) {
+    console.error(
+      `Caught error when fetching console section boundaries: '${e}'`,
+    );
+    return [];
+  }
+}
+
 export async function getResourceBundle(
   resource: string,
 ): Promise<ResourceBundle | undefined> {

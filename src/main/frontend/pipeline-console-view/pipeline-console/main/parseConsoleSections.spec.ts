@@ -1,6 +1,7 @@
 /** * @vitest-environment jsdom */
 
 import {
+  applyAnnotatorBoundaries,
   applyRulesToSections,
   compileSectionRules,
   ConsoleSectionGroup,
@@ -503,5 +504,91 @@ describe("applyRulesToSections", () => {
     const flat = parseConsoleSections(lines);
     const result = applyRulesToSections(flat, noCapture);
     expect((result[0] as ConsoleSectionGroup).title).toBe("Terraform Plan");
+  });
+});
+
+describe("applyAnnotatorBoundaries", () => {
+  it("returns nodes unchanged when boundaries is empty", () => {
+    const lines = ["a", "b", "c"];
+    const flat = parseConsoleSections(lines);
+    const result = applyAnnotatorBoundaries(flat, []);
+    expect(result).toEqual(flat);
+  });
+
+  it("groups lines between START and END boundaries", () => {
+    const lines = ["line 0", "line 1", "line 2", "line 3", "line 4"];
+    const flat = parseConsoleSections(lines);
+    const result = applyAnnotatorBoundaries(flat, [
+      { lineIndex: 1, type: "START", title: "Group A" },
+      { lineIndex: 3, type: "END" },
+    ]);
+
+    // START (line 1) and END (line 3) are consumed; line 2 is a child.
+    expect(result).toHaveLength(3);
+    expect(result[0]).toMatchObject({ kind: "line", index: 0 });
+
+    const group = result[1] as ConsoleSectionGroup;
+    expect(group.kind).toBe("group");
+    expect(group.title).toBe("Group A");
+    expect(group.startIndex).toBe(1);
+    expect(group.endIndex).toBe(3);
+    expect(group.children).toHaveLength(1);
+    expect(group.children[0]).toMatchObject({ kind: "line", index: 2 });
+
+    expect(result[2]).toMatchObject({ kind: "line", index: 4 });
+  });
+
+  it("auto-closes unclosed annotator group", () => {
+    const lines = ["line 0", "line 1", "line 2"];
+    const flat = parseConsoleSections(lines);
+    const result = applyAnnotatorBoundaries(flat, [
+      { lineIndex: 1, type: "START", title: "Open" },
+    ]);
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({ kind: "line", index: 0 });
+
+    const group = result[1] as ConsoleSectionGroup;
+    expect(group.kind).toBe("group");
+    expect(group.title).toBe("Open");
+    expect(group.endIndex).toBe(-1);
+    expect(group.children).toHaveLength(1);
+    expect(group.children[0]).toMatchObject({ kind: "line", index: 2 });
+  });
+
+  it("passes existing marker groups through unchanged", () => {
+    const lines = [
+      "line 0",
+      "##[group]Build",
+      "compiling",
+      "##[endgroup]",
+      "line 4",
+    ];
+    const parsed = parseConsoleSections(lines);
+    const result = applyAnnotatorBoundaries(parsed, [
+      { lineIndex: 0, type: "START", title: "Outer" },
+      { lineIndex: 4, type: "END" },
+    ]);
+
+    // Both START and END boundary lines are consumed (not shown).
+    expect(result).toHaveLength(1);
+    const outer = result[0] as ConsoleSectionGroup;
+    expect(outer.title).toBe("Outer");
+    expect(outer.endIndex).toBe(4);
+    // The marker group should be nested inside the annotator group
+    const markerGroup = outer.children.find((c) => c.kind === "group");
+    expect(markerGroup).toBeDefined();
+    expect((markerGroup as ConsoleSectionGroup).title).toBe("Build");
+  });
+
+  it("uses default title when title is missing", () => {
+    const lines = ["line 0", "line 1"];
+    const flat = parseConsoleSections(lines);
+    const result = applyAnnotatorBoundaries(flat, [
+      { lineIndex: 0, type: "START" },
+    ]);
+
+    const group = result[0] as ConsoleSectionGroup;
+    expect(group.title).toBe("Section");
   });
 });

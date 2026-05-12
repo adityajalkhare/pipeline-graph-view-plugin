@@ -39,13 +39,17 @@ public abstract class ConsoleSectionRule implements ExtensionPoint {
     public abstract String getDisplayName();
 
     /**
-     * Java regex pattern that matches the start of a collapsible section.
+     * ECMAScript-compatible regex pattern that matches the start of a collapsible section.
+     * These patterns are compiled on the frontend with {@code new RegExp(...)}, so they must
+     * use ECMAScript regex syntax (avoid Java-only features like possessive quantifiers or
+     * {@code \p{}} Unicode categories).
      * The first capture group, if present, is used as the section title.
      */
     public abstract String getStartPattern();
 
     /**
-     * Java regex pattern that matches the end of a collapsible section.
+     * ECMAScript-compatible regex pattern that matches the end of a collapsible section.
+     * See {@link #getStartPattern()} for syntax requirements.
      */
     public abstract String getEndPattern();
 

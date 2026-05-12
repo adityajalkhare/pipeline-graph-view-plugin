@@ -4,10 +4,13 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import {
   BuildStep,
+  ConsoleSectionBoundary,
+  getConsoleSectionBoundaries,
   getConsoleSectionRules,
 } from "../../../common/RestClient.tsx";
 import { ConsoleSectionNodeRenderer } from "./ConsoleSection.tsx";
 import {
+  applyAnnotatorBoundaries,
   applyRulesToSections,
   CompiledSectionRule,
   compileSectionRules,
@@ -116,10 +119,32 @@ export default function ConsoleLogStream({
     };
   }, [currentRunPath]);
 
+  const [boundaries, setBoundaries] = useState<ConsoleSectionBoundary[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    getConsoleSectionBoundaries(currentRunPath, stepId)
+      .then((data) => {
+        if (!cancelled) {
+          setBoundaries(data);
+        }
+        return data;
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [currentRunPath, stepId]);
+
   const sectionTree = useMemo(
     () =>
-      applyRulesToSections(parseConsoleSections(logBuffer.lines), sectionRules),
-    [logBuffer.lines, sectionRules],
+      applyAnnotatorBoundaries(
+        applyRulesToSections(
+          parseConsoleSections(logBuffer.lines),
+          sectionRules,
+        ),
+        boundaries,
+      ),
+    [logBuffer.lines, sectionRules, boundaries],
   );
 
   return (

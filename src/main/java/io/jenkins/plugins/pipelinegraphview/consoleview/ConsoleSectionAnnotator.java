@@ -1,6 +1,7 @@
 package io.jenkins.plugins.pipelinegraphview.consoleview;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.ExtensionList;
 import hudson.ExtensionPoint;
 
@@ -65,10 +66,14 @@ public abstract class ConsoleSectionAnnotator implements ExtensionPoint {
      * <p>Called once per line, in order. The annotator may maintain
      * internal state across calls within a single log stream.
      *
+     * <p>Implementations must never return {@code null}; return
+     * {@link SectionBoundary#NONE} if this line does not start or end
+     * a section.
+     *
      * @param line the raw console output line (may contain ANSI escapes)
      * @return a boundary event, or {@link SectionBoundary#NONE} if no transition
      */
-    @CheckForNull
+    @NonNull
     public abstract SectionBoundary detect(String line);
 
     /**

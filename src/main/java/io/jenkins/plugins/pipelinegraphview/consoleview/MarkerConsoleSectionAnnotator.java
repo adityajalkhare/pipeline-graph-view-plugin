@@ -1,6 +1,5 @@
 package io.jenkins.plugins.pipelinegraphview.consoleview;
 
-import hudson.Extension;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -10,8 +9,11 @@ import java.util.regex.Pattern;
  *
  * <p>This is the server-side counterpart to the frontend marker parser
  * in {@code parseConsoleSections.ts}. Both must agree on the syntax.
+ *
+ * <p>Not registered as an {@code @Extension} because the frontend already
+ * handles these markers directly. This class exists for third-party code
+ * that may instantiate it explicitly.
  */
-@Extension
 public class MarkerConsoleSectionAnnotator extends ConsoleSectionAnnotator {
 
     // Same ANSI stripping as the frontend.

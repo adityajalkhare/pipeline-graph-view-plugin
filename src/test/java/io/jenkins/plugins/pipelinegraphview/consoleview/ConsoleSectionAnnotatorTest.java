@@ -12,12 +12,14 @@ import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 class ConsoleSectionAnnotatorTest {
 
     @Test
-    void markerAnnotatorIsDiscovered(JenkinsRule j) {
+    void markerAnnotatorIsNotAutoDiscovered(JenkinsRule j) {
+        // MarkerConsoleSectionAnnotator no longer has @Extension because the
+        // frontend handles markers directly. Verify it does NOT appear in all().
         List<ConsoleSectionAnnotator> annotators =
                 ConsoleSectionAnnotator.all().stream().toList();
         List<String> ids =
                 annotators.stream().map(ConsoleSectionAnnotator::getId).toList();
-        assertThat(ids, hasItem("markers"));
+        assertThat(ids, not(hasItem("markers")));
     }
 
     @Test

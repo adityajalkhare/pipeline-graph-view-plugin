@@ -434,13 +434,15 @@ public class PipelineConsoleViewAction extends Tab {
         }
 
         // Read raw plain text (not HTML) - annotators expect undecorated output.
+        // We buffer into a byte array because writeLogTo requires an OutputStream,
+        // then stream line-by-line through the processor to avoid a second full copy.
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         logText.writeLogTo(0L, baos);
-        String rawLog = baos.toString("UTF-8");
 
         ConsoleSectionProcessor processor = new ConsoleSectionProcessor(
                 ConsoleSectionAnnotator.all().stream().toList());
-        List<ConsoleSectionProcessor.BoundaryEvent> events = processor.process(rawLog);
+        List<ConsoleSectionProcessor.BoundaryEvent> events =
+                processor.process(new java.io.ByteArrayInputStream(baos.toByteArray()));
 
         rsp.setStatus(200);
         rsp.setContentType("application/json;charset=UTF-8");

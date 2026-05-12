@@ -141,10 +141,13 @@ export function compileSectionRules(
     displayName: string;
     startPattern: string;
     endPattern: string;
+    enabledByDefault?: boolean;
   }>,
 ): CompiledSectionRule[] {
   const compiled: CompiledSectionRule[] = [];
   for (const rule of rules) {
+    // Skip rules that are explicitly disabled by default.
+    if (rule.enabledByDefault === false) continue;
     try {
       compiled.push({
         id: rule.id,
@@ -266,9 +269,9 @@ function matchAnyRule(
  *
  * Boundary events reference plain-text line indices from the backend.
  * Frontend lines come from progressiveHtml (HTML), so indices may not
- * align 1:1 if Jenkins injects extra HTML-only lines. We use a
- * best-effort match: the boundary's lineIndex maps to the Nth
- * ConsoleSectionLine node (by its `index` field).
+ * align 1:1 if Jenkins injects extra HTML-only lines. Boundaries are
+ * matched only to ConsoleSectionLine nodes whose `index` exactly equals
+ * the boundary's `lineIndex`; boundaries with no exact match are ignored.
  *
  * Only flat lines are grouped; already-grouped nodes are passed through.
  */

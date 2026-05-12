@@ -88,6 +88,7 @@ export const ConsoleSection = memo(function ConsoleSection({
               startByte={startByte}
               stopTailingLogs={stopTailingLogs}
               currentRunPath={currentRunPath}
+              buildStep={buildStep}
             />
           ))}
         </div>

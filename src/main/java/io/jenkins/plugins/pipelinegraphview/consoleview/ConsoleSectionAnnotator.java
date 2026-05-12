@@ -14,8 +14,10 @@ import hudson.ExtensionPoint;
  * titles, dynamic enable/disable conditions).
  *
  * <p>Implementations receive lines one at a time via {@link #detect(String)}
- * and return section boundary events. State is maintained per annotator
- * instance; a fresh instance is created for each log stream.
+ * and return section boundary events. Annotator instances from {@code all()}
+ * are shared singletons; the processor calls {@link #reset()} before each
+ * log stream and synchronizes access. Implementations should keep state
+ * in instance fields reset by {@link #reset()}.
  *
  * <p>Example:
  * <pre>

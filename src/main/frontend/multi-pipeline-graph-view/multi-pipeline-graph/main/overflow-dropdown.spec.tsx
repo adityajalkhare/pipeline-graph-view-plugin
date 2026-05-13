@@ -38,9 +38,7 @@ describe("OverflowDropdown", () => {
 
     expect(screen.getByLabelText("Show stage names")).toBeInTheDocument();
     expect(screen.getByLabelText("Show stage duration")).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Collapse nested stages"),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Collapse nested stages")).toBeInTheDocument();
   });
 
   it("should toggle collapse nested stages", () => {

@@ -10,7 +10,9 @@
 
 // When a single checkbox is placed directly inside a dropdown custom-item,
 // match the padding/sizing of jenkins-dropdown__item so it blends in.
-.jenkins-dropdown__custom-item:has(> .pgv-dropdown-checkboxes > .jenkins-checkbox:only-child) {
+.jenkins-dropdown__custom-item:has(
+  > .pgv-dropdown-checkboxes > .jenkins-checkbox:only-child
+) {
   .pgv-dropdown-checkboxes {
     margin: 0;
     gap: 0;

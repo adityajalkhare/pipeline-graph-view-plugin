@@ -58,7 +58,8 @@ export function PipelineGraph({
       ...layout,
     };
   }, [layout]);
-  const { showNames, showDurations } = useUserPreferences();
+  const { showNames, showDurations, collapseNestedStages } =
+    useUserPreferences();
 
   const messages = useContext(I18NContext);
 
@@ -115,6 +116,7 @@ export function PipelineGraph({
         messages,
         showNames || !collapsed,
         showDurations,
+        collapseNestedStages,
         maxColumnsWhenCollapsed,
       );
     }
@@ -125,6 +127,7 @@ export function PipelineGraph({
       messages,
       showNames,
       showDurations,
+      collapseNestedStages,
       maxColumnsWhenCollapsed,
     );
   }, [
@@ -134,6 +137,7 @@ export function PipelineGraph({
     messages,
     showNames,
     showDurations,
+    collapseNestedStages,
     maxColumnsWhenCollapsed,
   ]);
 

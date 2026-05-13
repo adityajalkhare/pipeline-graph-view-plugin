@@ -38,6 +38,17 @@ vi.mock("../../../common/user/user-permission-provider.tsx", () => ({
   useUserPermissions: () => ({ canConfigure: false }),
 }));
 
+vi.mock("../../../common/user/user-preferences-provider.tsx", () => ({
+  useUserPreferences: () => ({
+    showNames: true,
+    setShowNames: () => {},
+    showDurations: true,
+    setShowDurations: () => {},
+    collapseNestedStages: false,
+    setCollapseNestedStages: () => {},
+  }),
+}));
+
 vi.mock("../../../common/RestClient.tsx", async () => {
   const actual: any = await vi.importActual("../../../common/RestClient.tsx");
   return {

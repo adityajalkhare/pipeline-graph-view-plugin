@@ -20,8 +20,12 @@ export function nestedGraphLayout(
   messages: Messages,
   showNames: boolean,
   showDurations: boolean,
+  collapseNestedStages: boolean = false,
   maxColumnsWhenCollapsed: number = DEFAULT_MAX_COLUMNS_WHEN_COLLAPSED,
 ): PositionedGraph {
+  const effectiveStages = collapseNestedStages
+    ? collapseStages(stages)
+    : stages;
   const graphSpacingX = layout.nodeSpacingH / 2;
   const startEndReducedSpacing = Math.floor(layout.nodeSpacingH * 0.3);
   const root: GraphNode = {
@@ -48,7 +52,7 @@ export function nestedGraphLayout(
 
   if (collapsed) {
     buildGraphCollapsed(
-      stages,
+      effectiveStages,
       root,
       layout,
       showNames,
@@ -56,7 +60,7 @@ export function nestedGraphLayout(
       maxColumnsWhenCollapsed,
     );
   } else {
-    buildGraphNested(root, stages, layout, false);
+    buildGraphNested(root, effectiveStages, layout, false);
   }
 
   root.y = Math.max(
@@ -88,7 +92,7 @@ export function nestedGraphLayout(
   const timings = computeTimingsLabels(nodes, layout);
 
   const debug = debugPipelineGraph();
-  if (debug) printDebugInfo(stages, root, nodes, connections);
+  if (debug) printDebugInfo(effectiveStages, root, nodes, connections);
   return {
     nodes: debug ? nodes : visibleNodes,
     allNodes: nodes,
@@ -137,6 +141,44 @@ function maxGraphNodeProp(
   prop: "width" | "shiftY" | "height" | "shiftX",
 ): number {
   return Math.max(node[prop], ...node.children.map((c) => c[prop]));
+}
+
+const STATE_PRIORITY: Record<string, number> = {
+  [Result.failure]: 0,
+  [Result.unstable]: 1,
+  [Result.aborted]: 2,
+  [Result.paused]: 3,
+  [Result.running]: 4,
+  [Result.queued]: 5,
+  [Result.not_built]: 6,
+  [Result.skipped]: 7,
+  [Result.success]: 8,
+  [Result.unknown]: 9,
+};
+
+function worstState(a: Result, b: Result): Result {
+  return (STATE_PRIORITY[a] ?? 9) <= (STATE_PRIORITY[b] ?? 9) ? a : b;
+}
+
+function aggregateChildState(stage: StageInfo): Result {
+  let state = stage.state;
+  for (const child of stage.children) {
+    state = worstState(state, aggregateChildState(child));
+  }
+  return state;
+}
+
+export function collapseStages(stages: StageInfo[]): StageInfo[] {
+  return stages.map((stage) => {
+    if (stage.children.length === 0) {
+      return stage;
+    }
+    return {
+      ...stage,
+      children: [],
+      state: aggregateChildState(stage),
+    };
+  });
 }
 
 function collectCollapsedStages(

@@ -233,6 +233,11 @@ public class PipelineConsoleViewAction extends Tab {
         return PipelineGraphViewConfiguration.get().isShowGraphOnBuildPage();
     }
 
+    @SuppressWarnings("unused")
+    public boolean isCollapseNestedStages() {
+        return PipelineGraphViewConfiguration.get().isCollapseNestedStages();
+    }
+
     public boolean isBuildable() {
         return run.getParent().isBuildable();
     }

@@ -81,6 +81,7 @@ export enum LocalizedMessageKey {
   consoleNewTab = "console.newTab",
   tailLogsResume = "tailLogs.resume",
   tailLogsPause = "tailLogs.pause",
+  collapseNestedStages = "settings.collapseNestedStages",
 }
 
 const DEFAULT_MESSAGES: ResourceBundle = {
@@ -96,6 +97,7 @@ const DEFAULT_MESSAGES: ResourceBundle = {
   [LocalizedMessageKey.consoleNewTab]: "View step as plain text",
   [LocalizedMessageKey.tailLogsResume]: "Resume tailing logs",
   [LocalizedMessageKey.tailLogsPause]: "Pause tailing logs",
+  [LocalizedMessageKey.collapseNestedStages]: "Collapse nested stages",
 };
 
 export function defaultMessages(locale: string): Messages {

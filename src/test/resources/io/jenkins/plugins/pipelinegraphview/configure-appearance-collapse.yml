@@ -1,0 +1,8 @@
+appearance:
+  consoleUrlProvider:
+    providers:
+      - "pipelineGraphView"
+  pipelineGraphView:
+    showGraphOnBuildPage: true
+    showGraphOnJobPage: true
+    collapseNestedStages: true

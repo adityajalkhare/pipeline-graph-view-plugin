@@ -1,4 +1,5 @@
 import { LocalizedMessageKey, Messages } from "../../../common/i18n/index.ts";
+import { collapseStages } from "./NestedPipelineGraphLayout.ts";
 import {
   CompositeConnection,
   ConnectionEdge,
@@ -31,9 +32,13 @@ export function layoutGraph(
   messages: Messages,
   showNames: boolean,
   showDurations: boolean,
+  collapseNested: boolean = false,
   maxColumnsWhenCollapsed: number = DEFAULT_MAX_COLUMNS_WHEN_COLLAPSED,
 ): PositionedGraph {
-  const stageNodeColumns = createNodeColumns(newStages);
+  const effectiveStages = collapseNested
+    ? collapseStages(newStages)
+    : newStages;
+  const stageNodeColumns = createNodeColumns(effectiveStages);
 
   const startNode: NodeInfo = {
     x: 0,

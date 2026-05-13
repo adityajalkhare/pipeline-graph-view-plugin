@@ -5,11 +5,14 @@ interface PipelineGraphViewPreferences {
   setShowNames: (val: boolean) => void;
   showDurations: boolean;
   setShowDurations: (val: boolean) => void;
+  collapseNestedStages: boolean;
+  setCollapseNestedStages: (val: boolean) => void;
 }
 
 const defaultPreferences = {
   showNames: false,
   showDurations: false,
+  collapseNestedStages: false,
 };
 
 const UserPreferencesContext = createContext<
@@ -59,6 +62,7 @@ export const UserPreferencesProvider = ({
 }) => {
   const stageNamesKey = makeKey("stageNames");
   const stageDurationsKey = makeKey("stageDurations");
+  const collapseNestedStagesKey = makeKey("collapseNestedStages");
 
   const [showNames, setShowNames] = useState<boolean>(
     loadFromLocalStorage(
@@ -75,6 +79,15 @@ export const UserPreferencesProvider = ({
       ),
     ),
   );
+  const [collapseNestedStages, setCollapseNestedStages] = useState<boolean>(
+    loadFromLocalStorage(
+      collapseNestedStagesKey,
+      loadFromDOM(
+        "preferenceCollapseNestedStages",
+        defaultPreferences.collapseNestedStages,
+      ),
+    ),
+  );
 
   const persistShowNames = (val: boolean) => {
     window.localStorage.setItem(stageNamesKey, String(val));
@@ -86,6 +99,11 @@ export const UserPreferencesProvider = ({
     setShowDurations(val);
   };
 
+  const persistCollapseNestedStages = (val: boolean) => {
+    window.localStorage.setItem(collapseNestedStagesKey, String(val));
+    setCollapseNestedStages(val);
+  };
+
   return (
     <UserPreferencesContext.Provider
       value={{
@@ -93,6 +111,8 @@ export const UserPreferencesProvider = ({
         setShowNames: persistShowNames,
         showDurations,
         setShowDurations: persistShowDurations,
+        collapseNestedStages,
+        setCollapseNestedStages: persistCollapseNestedStages,
       }}
     >
       {children}

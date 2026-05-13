@@ -59,6 +59,11 @@ public class MultiPipelineGraphViewAction implements Action, IconSpec {
         return PipelineGraphViewConfiguration.get().isShowStageDurations();
     }
 
+    @SuppressWarnings("unused")
+    public boolean isCollapseNestedStages() {
+        return PipelineGraphViewConfiguration.get().isCollapseNestedStages();
+    }
+
     @GET
     @WebMethod(name = "runs")
     public void getRuns(StaplerRequest2 req, StaplerResponse2 rsp) throws ServletException, IOException {

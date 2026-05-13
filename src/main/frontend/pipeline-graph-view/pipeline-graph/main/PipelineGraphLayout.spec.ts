@@ -432,6 +432,7 @@ describe("PipelineGraphLayout", () => {
           defaultMessages(DEFAULT_LOCALE),
           false,
           false,
+          false,
           maxColumns,
         );
 

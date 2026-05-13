@@ -13,8 +13,14 @@ interface OverflowDropdownProps {
 export default function OverflowDropdown({
   buttonPortal,
 }: OverflowDropdownProps) {
-  const { showNames, setShowNames, showDurations, setShowDurations } =
-    useUserPreferences();
+  const {
+    showNames,
+    setShowNames,
+    showDurations,
+    setShowDurations,
+    collapseNestedStages,
+    setCollapseNestedStages,
+  } = useUserPreferences();
   const { canConfigure } = useUserPermissions();
   const messages = useMessages();
   return (
@@ -32,6 +38,11 @@ export default function OverflowDropdown({
               label={messages.format(LocalizedMessageKey.showDuration)}
               value={showDurations}
               setValue={setShowDurations}
+            />
+            <Checkbox
+              label={messages.format(LocalizedMessageKey.collapseNestedStages)}
+              value={collapseNestedStages}
+              setValue={setCollapseNestedStages}
             />
           </div>,
           canConfigure ? "separator" : <></>,

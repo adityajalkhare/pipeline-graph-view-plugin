@@ -12,6 +12,9 @@
     <f:entry>
       <f:checkbox field="showStageDurations" title="${%pipelineStageShowStageDurations}" />
     </f:entry>
+    <f:entry>
+      <f:checkbox field="collapseNestedStages" title="${%pipelineCollapseNestedStages}" />
+    </f:entry>
   </f:section>
   <f:section title="${%pipelineGraph}">
     <f:entry>

@@ -21,8 +21,8 @@ export default function SettingsButton({ buttonPortal }: SettingsButtonProps) {
     setShowNames,
     showDurations,
     setShowDurations,
-    collapseNestedStages,
-    setCollapseNestedStages,
+    collapseNestedStagesOverview,
+    setCollapseNestedStagesOverview,
   } = useUserPreferences();
 
   return (
@@ -48,8 +48,8 @@ export default function SettingsButton({ buttonPortal }: SettingsButtonProps) {
                 label={messages.format(
                   LocalizedMessageKey.collapseNestedStages,
                 )}
-                value={collapseNestedStages}
-                setValue={setCollapseNestedStages}
+                value={collapseNestedStagesOverview}
+                setValue={setCollapseNestedStagesOverview}
               />
             </div>,
           ]}

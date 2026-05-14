@@ -17,7 +17,7 @@ export default function StagesCustomization() {
     setStageViewPosition,
     isMobile,
   } = useLayoutPreferences();
-  const { collapseNestedStages, setCollapseNestedStages } =
+  const { collapseNestedStagesBuild, setCollapseNestedStagesBuild } =
     useUserPreferences();
 
   if (isMobile) {
@@ -163,12 +163,12 @@ export default function StagesCustomization() {
           </svg>
         </div>
         Nested stages
-        <span>{collapseNestedStages ? "Collapsed" : "Expanded"}</span>
+        <span>{collapseNestedStagesBuild ? "Collapsed" : "Expanded"}</span>
         <select
           id="pgv-nested-stages"
-          value={collapseNestedStages ? "collapsed" : "expanded"}
+          value={collapseNestedStagesBuild ? "collapsed" : "expanded"}
           onChange={(e) =>
-            setCollapseNestedStages(e.target.value === "collapsed")
+            setCollapseNestedStagesBuild(e.target.value === "collapsed")
           }
         >
           <option value="expanded">Expanded</option>

@@ -10,6 +10,7 @@ import {
 
 import Tooltip from "../../../../common/components/tooltip.tsx";
 import { classNames } from "../../../../common/utils/classnames.ts";
+import { useUserPreferences } from "../../../../common/user/user-preferences-provider.tsx";
 import { PipelineGraph } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraph.tsx";
 import { StageInfo } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraphModel.tsx";
 import { StageViewPosition } from "../providers/user-preference-provider.tsx";
@@ -22,6 +23,7 @@ export default function Stages({
   onRunPage,
 }: StagesProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { collapseNestedStagesBuild } = useUserPreferences();
 
   const handleStageSelect = useCallback(
     (nodeId: string) => {
@@ -109,6 +111,7 @@ export default function Stages({
           <PipelineGraph
             stages={stages}
             selectedStage={selectedStage}
+            collapseNestedStages={collapseNestedStagesBuild}
             {...(onStageSelect && { onStageSelect: handleStageSelect })}
           />
         </TransformComponent>

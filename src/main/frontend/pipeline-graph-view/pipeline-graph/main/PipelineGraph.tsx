@@ -50,6 +50,7 @@ export function PipelineGraph({
   layout,
   selectedStage,
   collapsed,
+  collapseNestedStages = false,
   onStageSelect,
 }: Props) {
   const fullLayout = useMemo(() => {
@@ -58,8 +59,7 @@ export function PipelineGraph({
       ...layout,
     };
   }, [layout]);
-  const { showNames, showDurations, collapseNestedStages } =
-    useUserPreferences();
+  const { showNames, showDurations } = useUserPreferences();
 
   const messages = useContext(I18NContext);
 
@@ -334,5 +334,6 @@ interface Props {
   layout?: Partial<LayoutInfo>;
   selectedStage?: StageInfo;
   collapsed?: boolean;
+  collapseNestedStages?: boolean;
   onStageSelect?: (nodeId: string) => void;
 }

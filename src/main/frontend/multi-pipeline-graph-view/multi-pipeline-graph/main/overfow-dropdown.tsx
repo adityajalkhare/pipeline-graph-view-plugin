@@ -18,8 +18,8 @@ export default function OverflowDropdown({
     setShowNames,
     showDurations,
     setShowDurations,
-    collapseNestedStages,
-    setCollapseNestedStages,
+    collapseNestedStagesOverview,
+    setCollapseNestedStagesOverview,
   } = useUserPreferences();
   const { canConfigure } = useUserPermissions();
   const messages = useMessages();
@@ -41,8 +41,8 @@ export default function OverflowDropdown({
             />
             <Checkbox
               label={messages.format(LocalizedMessageKey.collapseNestedStages)}
-              value={collapseNestedStages}
-              setValue={setCollapseNestedStages}
+              value={collapseNestedStagesOverview}
+              setValue={setCollapseNestedStagesOverview}
             />
           </div>,
           canConfigure ? "separator" : <></>,

@@ -5,8 +5,10 @@ interface PipelineGraphViewPreferences {
   setShowNames: (val: boolean) => void;
   showDurations: boolean;
   setShowDurations: (val: boolean) => void;
-  collapseNestedStages: boolean;
-  setCollapseNestedStages: (val: boolean) => void;
+  collapseNestedStagesOverview: boolean;
+  setCollapseNestedStagesOverview: (val: boolean) => void;
+  collapseNestedStagesBuild: boolean;
+  setCollapseNestedStagesBuild: (val: boolean) => void;
 }
 
 const defaultPreferences = {
@@ -62,7 +64,16 @@ export const UserPreferencesProvider = ({
 }) => {
   const stageNamesKey = makeKey("stageNames");
   const stageDurationsKey = makeKey("stageDurations");
-  const collapseNestedStagesKey = makeKey("collapseNestedStages");
+  const collapseNestedStagesOverviewKey = makeKey(
+    "collapseNestedStagesOverview",
+  );
+  const collapseNestedStagesBuildKey = makeKey("collapseNestedStagesBuild");
+
+  // Shared DOM fallback from the global admin config
+  const collapseDOMDefault = loadFromDOM(
+    "preferenceCollapseNestedStages",
+    defaultPreferences.collapseNestedStages,
+  );
 
   const [showNames, setShowNames] = useState<boolean>(
     loadFromLocalStorage(
@@ -79,15 +90,14 @@ export const UserPreferencesProvider = ({
       ),
     ),
   );
-  const [collapseNestedStages, setCollapseNestedStages] = useState<boolean>(
-    loadFromLocalStorage(
-      collapseNestedStagesKey,
-      loadFromDOM(
-        "preferenceCollapseNestedStages",
-        defaultPreferences.collapseNestedStages,
-      ),
-    ),
-  );
+  const [collapseNestedStagesOverview, setCollapseNestedStagesOverview] =
+    useState<boolean>(
+      loadFromLocalStorage(collapseNestedStagesOverviewKey, collapseDOMDefault),
+    );
+  const [collapseNestedStagesBuild, setCollapseNestedStagesBuild] =
+    useState<boolean>(
+      loadFromLocalStorage(collapseNestedStagesBuildKey, collapseDOMDefault),
+    );
 
   const persistShowNames = (val: boolean) => {
     window.localStorage.setItem(stageNamesKey, String(val));
@@ -99,9 +109,14 @@ export const UserPreferencesProvider = ({
     setShowDurations(val);
   };
 
-  const persistCollapseNestedStages = (val: boolean) => {
-    window.localStorage.setItem(collapseNestedStagesKey, String(val));
-    setCollapseNestedStages(val);
+  const persistCollapseNestedStagesOverview = (val: boolean) => {
+    window.localStorage.setItem(collapseNestedStagesOverviewKey, String(val));
+    setCollapseNestedStagesOverview(val);
+  };
+
+  const persistCollapseNestedStagesBuild = (val: boolean) => {
+    window.localStorage.setItem(collapseNestedStagesBuildKey, String(val));
+    setCollapseNestedStagesBuild(val);
   };
 
   return (
@@ -111,8 +126,10 @@ export const UserPreferencesProvider = ({
         setShowNames: persistShowNames,
         showDurations,
         setShowDurations: persistShowDurations,
-        collapseNestedStages,
-        setCollapseNestedStages: persistCollapseNestedStages,
+        collapseNestedStagesOverview,
+        setCollapseNestedStagesOverview: persistCollapseNestedStagesOverview,
+        collapseNestedStagesBuild,
+        setCollapseNestedStagesBuild: persistCollapseNestedStagesBuild,
       }}
     >
       {children}

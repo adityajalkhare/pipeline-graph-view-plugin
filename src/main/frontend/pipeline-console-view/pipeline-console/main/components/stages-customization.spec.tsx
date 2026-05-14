@@ -8,19 +8,19 @@ import StagesCustomization from "./stages-customization.tsx";
 const {
   mockSetMainViewVisibility,
   mockSetStageViewPosition,
-  mockSetCollapseNestedStages,
+  mockSetCollapseNestedStagesBuild,
   mockUseLayoutPreferences,
 } = vi.hoisted(() => ({
   mockSetMainViewVisibility: vi.fn(),
   mockSetStageViewPosition: vi.fn(),
-  mockSetCollapseNestedStages: vi.fn(),
+  mockSetCollapseNestedStagesBuild: vi.fn(),
   mockUseLayoutPreferences: vi.fn(),
 }));
 
 vi.mock("../../../../common/user/user-preferences-provider.tsx", () => ({
   useUserPreferences: () => ({
-    collapseNestedStages: false,
-    setCollapseNestedStages: mockSetCollapseNestedStages,
+    collapseNestedStagesBuild: false,
+    setCollapseNestedStagesBuild: mockSetCollapseNestedStagesBuild,
   }),
 }));
 
@@ -94,14 +94,14 @@ describe("StagesCustomization", () => {
     expect(options[1].value).toBe("collapsed");
   });
 
-  it("should call setCollapseNestedStages when nested stages select changes", () => {
+  it("should call setCollapseNestedStagesBuild when nested stages select changes", () => {
     render(<StagesCustomization />);
 
     const nestedSelect = document.getElementById(
       "pgv-nested-stages",
     ) as HTMLSelectElement;
     fireEvent.change(nestedSelect, { target: { value: "collapsed" } });
-    expect(mockSetCollapseNestedStages).toHaveBeenCalledWith(true);
+    expect(mockSetCollapseNestedStagesBuild).toHaveBeenCalledWith(true);
   });
 
   it("should return null on mobile", () => {

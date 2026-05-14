@@ -9,8 +9,8 @@ import {
 } from "react-zoom-pan-pinch";
 
 import Tooltip from "../../../../common/components/tooltip.tsx";
-import { classNames } from "../../../../common/utils/classnames.ts";
 import { useUserPreferences } from "../../../../common/user/user-preferences-provider.tsx";
+import { classNames } from "../../../../common/utils/classnames.ts";
 import { PipelineGraph } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraph.tsx";
 import { StageInfo } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraphModel.tsx";
 import { StageViewPosition } from "../providers/user-preference-provider.tsx";

@@ -7,7 +7,7 @@ import {
   Result,
   StageInfo,
 } from "../PipelineGraphModel.tsx";
-import { BigLabel, SmallLabel, SequentialContainerLabel } from "./labels.tsx";
+import { BigLabel, SequentialContainerLabel, SmallLabel } from "./labels.tsx";
 
 const layout: LayoutInfo = {
   nodeSpacingH: 120,
@@ -104,7 +104,7 @@ describe("BigLabel", () => {
         layout={layout}
         measuredHeight={200}
         isSelected={false}
-        isCollapsed={true}
+        isCollapsed
       />,
     );
     expect(screen.getByTitle("Expand nested stages")).toBeInTheDocument();
@@ -136,7 +136,7 @@ describe("BigLabel", () => {
         layout={layout}
         measuredHeight={200}
         isSelected={false}
-        isCollapsed={true}
+        isCollapsed
       />,
     );
     expect(screen.getByText("(5)")).toBeInTheDocument();
@@ -164,7 +164,7 @@ describe("SmallLabel", () => {
         details={makeLabelInfo(stage)}
         layout={layout}
         isSelected={false}
-        isCollapsed={true}
+        isCollapsed
       />,
     );
     expect(screen.getByText("(3)")).toBeInTheDocument();
@@ -179,7 +179,7 @@ describe("SmallLabel", () => {
         details={makeLabelInfo(stage)}
         layout={layout}
         isSelected={false}
-        isCollapsed={true}
+        isCollapsed
         onToggleCollapse={toggle}
       />,
     );
@@ -223,7 +223,7 @@ describe("SequentialContainerLabel", () => {
       <SequentialContainerLabel
         details={makeLabelInfo(stage)}
         layout={layout}
-        isCollapsed={true}
+        isCollapsed
       />,
     );
     expect(screen.getByTitle("Expand nested stages")).toBeInTheDocument();
@@ -251,7 +251,7 @@ describe("SequentialContainerLabel", () => {
       <SequentialContainerLabel
         details={makeLabelInfo(stage)}
         layout={layout}
-        isCollapsed={true}
+        isCollapsed
       />,
     );
     expect(screen.getByText("(4)")).toBeInTheDocument();

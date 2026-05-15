@@ -16,14 +16,8 @@ type SettingsButtonProps = {
 
 export default function SettingsButton({ buttonPortal }: SettingsButtonProps) {
   const messages = useMessages();
-  const {
-    showNames,
-    setShowNames,
-    showDurations,
-    setShowDurations,
-    collapseNestedStagesOverview,
-    setCollapseNestedStagesOverview,
-  } = useUserPreferences();
+  const { showNames, setShowNames, showDurations, setShowDurations } =
+    useUserPreferences();
 
   return (
     <>
@@ -43,13 +37,6 @@ export default function SettingsButton({ buttonPortal }: SettingsButtonProps) {
                 label={messages.format(LocalizedMessageKey.showDuration)}
                 value={showDurations}
                 setValue={setShowDurations}
-              />
-              <Checkbox
-                label={messages.format(
-                  LocalizedMessageKey.collapseNestedStages,
-                )}
-                value={collapseNestedStagesOverview}
-                setValue={setCollapseNestedStagesOverview}
               />
             </div>,
           ]}

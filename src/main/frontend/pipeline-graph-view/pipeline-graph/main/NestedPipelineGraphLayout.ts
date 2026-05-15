@@ -20,12 +20,13 @@ export function nestedGraphLayout(
   messages: Messages,
   showNames: boolean,
   showDurations: boolean,
-  collapseNestedStages: boolean = false,
   maxColumnsWhenCollapsed: number = DEFAULT_MAX_COLUMNS_WHEN_COLLAPSED,
+  collapsedStageNames: Set<string> = new Set(),
 ): PositionedGraph {
-  const effectiveStages = collapseNestedStages
-    ? collapseStages(stages)
-    : stages;
+  const effectiveStages =
+    collapsedStageNames.size > 0
+      ? collapseSelectiveStages(stages, collapsedStageNames)
+      : stages;
   const graphSpacingX = layout.nodeSpacingH / 2;
   const startEndReducedSpacing = Math.floor(layout.nodeSpacingH * 0.3);
   const root: GraphNode = {
@@ -179,6 +180,50 @@ export function collapseStages(stages: StageInfo[]): StageInfo[] {
       state: aggregateChildState(stage),
     };
   });
+}
+
+export function collapseSelectiveStages(
+  stages: StageInfo[],
+  collapsedNames: Set<string>,
+): StageInfo[] {
+  return stages.map((stage) => {
+    if (stage.children.length === 0) {
+      return stage;
+    }
+    if (collapsedNames.has(stage.name)) {
+      return {
+        ...stage,
+        children: [],
+        collapsedChildCount: countLeafStages(stage),
+        state: aggregateChildState(stage),
+      };
+    }
+    return {
+      ...stage,
+      children: collapseSelectiveStages(stage.children, collapsedNames),
+    };
+  });
+}
+
+function countLeafStages(stage: StageInfo): number {
+  if (stage.children.length === 0) {
+    return 1;
+  }
+  return stage.children.reduce((sum, child) => sum + countLeafStages(child), 0);
+}
+
+export function collectParentStageNames(stages: StageInfo[]): Set<string> {
+  const names = new Set<string>();
+  function walk(list: StageInfo[]) {
+    for (const stage of list) {
+      if (stage.children.length > 0) {
+        names.add(stage.name);
+        walk(stage.children);
+      }
+    }
+  }
+  walk(stages);
+  return names;
 }
 
 function collectCollapsedStages(
@@ -478,6 +523,7 @@ function computeBranchLabels(nodes: GraphNode[], layout: LayoutInfo) {
         y: node.y,
         key: "l_branch_" + node.key,
         node,
+        stage: "stage" in node ? node.stage : undefined,
         text: node.name,
       };
     });

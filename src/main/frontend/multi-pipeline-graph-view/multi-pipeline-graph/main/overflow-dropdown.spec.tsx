@@ -38,19 +38,6 @@ describe("OverflowDropdown", () => {
 
     expect(screen.getByLabelText("Show stage names")).toBeInTheDocument();
     expect(screen.getByLabelText("Show stage duration")).toBeInTheDocument();
-    expect(screen.getByLabelText("Collapse nested stages")).toBeInTheDocument();
-  });
-
-  it("should toggle collapse nested stages", () => {
-    const portal = createButtonPortal();
-    renderComponent(portal);
-
-    fireEvent.click(screen.getByText("More actions"));
-
-    const checkbox = screen.getByLabelText("Collapse nested stages");
-    expect(checkbox).not.toBeChecked();
-    fireEvent.click(checkbox);
-    expect(checkbox).toBeChecked();
   });
 
   it("should show Configure link when user can configure", () => {

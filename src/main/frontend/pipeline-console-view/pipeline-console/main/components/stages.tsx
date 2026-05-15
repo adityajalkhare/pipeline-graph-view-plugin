@@ -1,6 +1,6 @@
 import "./stages.scss";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   TransformComponent,
   TransformWrapper,
@@ -9,8 +9,8 @@ import {
 } from "react-zoom-pan-pinch";
 
 import Tooltip from "../../../../common/components/tooltip.tsx";
-import { useUserPreferences } from "../../../../common/user/user-preferences-provider.tsx";
 import { classNames } from "../../../../common/utils/classnames.ts";
+import { collectParentStageNames } from "../../../../pipeline-graph-view/pipeline-graph/main/NestedPipelineGraphLayout.ts";
 import { PipelineGraph } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraph.tsx";
 import { StageInfo } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraphModel.tsx";
 import { StageViewPosition } from "../providers/user-preference-provider.tsx";
@@ -23,7 +23,93 @@ export default function Stages({
   onRunPage,
 }: StagesProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { collapseNestedStagesBuild } = useUserPreferences();
+
+  const collapsedStageNamesKey = "pgv.collapsedStages.build";
+
+  const [collapsedStageNames, setCollapsedStageNames] = useState<Set<string>>(
+    () => {
+      try {
+        const stored = window.localStorage.getItem(collapsedStageNamesKey);
+        if (stored) {
+          return new Set(JSON.parse(stored) as string[]);
+        }
+      } catch {
+        // ignore
+      }
+      return new Set();
+    },
+  );
+
+  const persistCollapsedNames = useCallback(
+    (names: Set<string>) => {
+      setCollapsedStageNames(names);
+      try {
+        window.localStorage.setItem(
+          collapsedStageNamesKey,
+          JSON.stringify([...names]),
+        );
+      } catch {
+        // ignore
+      }
+    },
+    [collapsedStageNamesKey],
+  );
+
+  const toggleCollapseStage = useCallback(
+    (stageName: string) => {
+      setCollapsedStageNames((prev) => {
+        const next = new Set(prev);
+        if (next.has(stageName)) {
+          next.delete(stageName);
+        } else {
+          next.add(stageName);
+        }
+        try {
+          window.localStorage.setItem(
+            collapsedStageNamesKey,
+            JSON.stringify([...next]),
+          );
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    },
+    [collapsedStageNamesKey],
+  );
+
+  const handleCollapseAll = useCallback(() => {
+    persistCollapsedNames(collectParentStageNames(stages));
+  }, [stages, persistCollapsedNames]);
+
+  const handleExpandAll = useCallback(() => {
+    persistCollapsedNames(new Set());
+  }, [persistCollapsedNames]);
+
+  const hasCollapsibleStages = useMemo(
+    () => collectParentStageNames(stages).size > 0,
+    [stages],
+  );
+
+  // Seed collapsed state from admin default when no localStorage state exists.
+  const adminDefaultApplied = useRef(false);
+  useEffect(() => {
+    if (adminDefaultApplied.current) return;
+    if (stages.length === 0) return;
+    if (window.localStorage.getItem(collapsedStageNamesKey) != null) {
+      adminDefaultApplied.current = true;
+      return;
+    }
+    const prefEl = document.querySelector("[data-module='user-preferences']");
+    const collapseDefault =
+      prefEl instanceof HTMLElement
+        ? prefEl.dataset.preferenceCollapseNestedStages === "true"
+        : false;
+    if (collapseDefault) {
+      persistCollapsedNames(collectParentStageNames(stages));
+    }
+    adminDefaultApplied.current = true;
+  }, [stages, collapsedStageNamesKey, persistCollapsedNames]);
 
   const handleStageSelect = useCallback(
     (nodeId: string) => {
@@ -105,13 +191,19 @@ export default function Stages({
         maxScale={3}
         wheel={{ activationKeys: isExpanded ? [] : ["Control"] }}
       >
-        <ZoomControls />
+        <ZoomControls
+          collapsedStageNames={collapsedStageNames}
+          hasCollapsibleStages={hasCollapsibleStages}
+          onCollapseAll={handleCollapseAll}
+          onExpandAll={handleExpandAll}
+        />
 
         <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
           <PipelineGraph
             stages={stages}
             selectedStage={selectedStage}
-            collapseNestedStages={collapseNestedStagesBuild}
+            collapsedStageNames={collapsedStageNames}
+            onToggleCollapse={toggleCollapseStage}
             {...(onStageSelect && { onStageSelect: handleStageSelect })}
           />
         </TransformComponent>
@@ -128,7 +220,19 @@ interface StagesProps {
   onRunPage?: boolean;
 }
 
-function ZoomControls() {
+interface ZoomControlsProps {
+  collapsedStageNames: Set<string>;
+  hasCollapsibleStages: boolean;
+  onCollapseAll: () => void;
+  onExpandAll: () => void;
+}
+
+function ZoomControls({
+  collapsedStageNames,
+  hasCollapsibleStages,
+  onCollapseAll,
+  onExpandAll,
+}: ZoomControlsProps) {
   const { zoomIn, zoomOut, resetTransform } = useControls();
   const [buttonState, setButtonState] = useState({
     zoomIn: false,
@@ -212,6 +316,44 @@ function ZoomControls() {
           </svg>
         </button>
       </Tooltip>
+      {hasCollapsibleStages && (
+        <Tooltip
+          content={
+            collapsedStageNames.size > 0
+              ? "Expand all stages"
+              : "Collapse all stages"
+          }
+        >
+          <button
+            className={"jenkins-button jenkins-button--tertiary"}
+            onClick={collapsedStageNames.size > 0 ? onExpandAll : onCollapseAll}
+          >
+            {collapsedStageNames.size > 0 ? (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="32"
+                  d="M136 208l120-104 120 104M136 304l120 104 120-104"
+                />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="32"
+                  d="M136 104l120 104 120-104M136 408l120-104 120 104"
+                />
+              </svg>
+            )}
+          </button>
+        </Tooltip>
+      )}
     </div>
   );
 }

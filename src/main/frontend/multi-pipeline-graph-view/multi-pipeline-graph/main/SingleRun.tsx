@@ -38,8 +38,7 @@ export default function SingleRun({ run, currentJobPath }: SingleRunProps) {
     );
   }
 
-  const { showNames, showDurations, collapseNestedStagesOverview } =
-    useUserPreferences();
+  const { showNames, showDurations } = useUserPreferences();
 
   function getLayout() {
     const layout: LayoutInfo = { ...defaultLayout };
@@ -76,12 +75,7 @@ export default function SingleRun({ run, currentJobPath }: SingleRunProps) {
           </span>
         </a>
       </div>
-      <PipelineGraph
-        stages={runInfo.stages}
-        layout={getLayout()}
-        collapseNestedStages={collapseNestedStagesOverview}
-        collapsed
-      />
+      <PipelineGraph stages={runInfo.stages} layout={getLayout()} collapsed />
     </div>
   );
 }

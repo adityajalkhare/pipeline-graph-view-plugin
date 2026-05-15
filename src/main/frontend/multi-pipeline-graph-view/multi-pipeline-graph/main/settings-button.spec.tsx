@@ -53,17 +53,4 @@ describe("SettingsButton", () => {
     fireEvent.click(showDurationsCheckbox);
     expect(showDurationsCheckbox).toBeChecked();
   });
-
-  it("should show and toggle collapse nested stages checkbox", () => {
-    const buttonPortal = createButtonPortal();
-    renderComponent(buttonPortal);
-
-    const settingsButton = screen.getByText("Settings");
-    fireEvent.click(settingsButton);
-
-    const collapseCheckbox = screen.getByLabelText("Collapse nested stages");
-    expect(collapseCheckbox).not.toBeChecked();
-    fireEvent.click(collapseCheckbox);
-    expect(collapseCheckbox).toBeChecked();
-  });
 });

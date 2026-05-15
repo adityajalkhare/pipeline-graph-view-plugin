@@ -2,7 +2,6 @@ import "./stages-customization.scss";
 
 import { ChangeEvent } from "react";
 
-import { useUserPreferences } from "../../../../common/user/user-preferences-provider.tsx";
 import {
   MainViewVisibility,
   StageViewPosition,
@@ -17,8 +16,6 @@ export default function StagesCustomization() {
     setStageViewPosition,
     isMobile,
   } = useLayoutPreferences();
-  const { collapseNestedStagesBuild, setCollapseNestedStagesBuild } =
-    useUserPreferences();
 
   if (isMobile) {
     return null;
@@ -130,51 +127,6 @@ export default function StagesCustomization() {
         </select>
       </label>
 
-      <label
-        className="jenkins-dropdown__item pgv-stages-customization"
-        htmlFor="pgv-nested-stages"
-      >
-        <div className="jenkins-dropdown__item__icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-            <path
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="32"
-              d="M434.8 137.65 256 53.21 77.2 137.65l178.8 84.44 178.8-84.44z"
-            />
-            <path
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="32"
-              d="m160 196-82.8 37.65 178.8 84.44 178.8-84.44-82.8-37.65"
-            />
-            <path
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="32"
-              d="m160 292-82.8 37.65 178.8 84.44 178.8-84.44-82.8-37.65"
-            />
-          </svg>
-        </div>
-        Nested stages
-        <span>{collapseNestedStagesBuild ? "Collapsed" : "Expanded"}</span>
-        <select
-          id="pgv-nested-stages"
-          value={collapseNestedStagesBuild ? "collapsed" : "expanded"}
-          onChange={(e) =>
-            setCollapseNestedStagesBuild(e.target.value === "collapsed")
-          }
-        >
-          <option value="expanded">Expanded</option>
-          <option value="collapsed">Collapsed</option>
-        </select>
-      </label>
       <div className="jenkins-dropdown__separator" />
     </>
   );

@@ -1,7 +1,9 @@
 import { DEFAULT_LOCALE } from "../../../common/i18n/index.ts";
 import { defaultMessages } from "../../../common/i18n/messages.ts";
 import {
+  collapseSelectiveStages,
   collapseStages,
+  collectParentStageNames,
   nestedGraphLayout,
   removeFalseOptionalGraphNodeFlags,
 } from "./NestedPipelineGraphLayout.ts";
@@ -74,6 +76,19 @@ describe("NestedPipelineGraphLayout", () => {
       });
       it("should render collapsed layout", () => {
         shouldMatchSnapshot(raw, true);
+      });
+    });
+
+    describe("selective collapse", () => {
+      const raw =
+        '[{"name":"Non-Parallel Stage","state":"success","id":"6","type":"STAGE","children":[]},{"name":"Parallel Stage","state":"success","id":"12","type":"STAGE","children":[{"name":"Branch A","state":"success","id":"16","type":"PARALLEL","children":[]},{"name":"Branch B","state":"success","id":"17","type":"PARALLEL","children":[]},{"name":"Branch C","state":"success","id":"18","type":"PARALLEL","children":[{"name":"Nested 1","state":"success","id":"26","type":"STAGE","children":[]},{"name":"Nested 2","state":"success","id":"42","type":"STAGE","children":[]}]}]},{"name":"Skipped stage","state":"skipped","id":"54","type":"STAGE","children":[]}]';
+
+      it("should render layout with one branch collapsed", () => {
+        shouldMatchSelectiveSnapshot(raw, new Set(["Branch C"]));
+      });
+
+      it("should render layout with top-level stage collapsed", () => {
+        shouldMatchSelectiveSnapshot(raw, new Set(["Parallel Stage"]));
       });
     });
   });
@@ -216,6 +231,250 @@ describe("NestedPipelineGraphLayout", () => {
       expect(result[0].state).toBe(Result.aborted);
     });
   });
+
+  describe("collapseSelectiveStages", () => {
+    it("should leave leaf stages unchanged", () => {
+      const stages: StageInfo[] = [
+        {
+          name: "Build",
+          state: Result.success,
+          id: 1,
+          type: "STAGE",
+          children: [],
+        } as unknown as StageInfo,
+      ];
+      const result = collapseSelectiveStages(stages, new Set(["Build"]));
+      expect(result).toHaveLength(1);
+      expect(result[0].children).toHaveLength(0);
+      expect(result[0].collapsedChildCount).toBeUndefined();
+    });
+
+    it("should collapse a named parent stage", () => {
+      const stages: StageInfo[] = [
+        {
+          name: "Test",
+          state: Result.success,
+          id: 1,
+          type: "STAGE",
+          children: [
+            {
+              name: "Unit",
+              state: Result.success,
+              id: 2,
+              type: "STAGE",
+              children: [],
+            } as unknown as StageInfo,
+            {
+              name: "Integration",
+              state: Result.failure,
+              id: 3,
+              type: "STAGE",
+              children: [],
+            } as unknown as StageInfo,
+          ],
+        } as unknown as StageInfo,
+      ];
+      const result = collapseSelectiveStages(stages, new Set(["Test"]));
+      expect(result[0].children).toHaveLength(0);
+      expect(result[0].collapsedChildCount).toBe(2);
+      expect(result[0].state).toBe(Result.failure);
+    });
+
+    it("should not collapse stages not in the set", () => {
+      const stages: StageInfo[] = [
+        {
+          name: "Test",
+          state: Result.success,
+          id: 1,
+          type: "STAGE",
+          children: [
+            {
+              name: "Unit",
+              state: Result.success,
+              id: 2,
+              type: "STAGE",
+              children: [],
+            } as unknown as StageInfo,
+          ],
+        } as unknown as StageInfo,
+      ];
+      const result = collapseSelectiveStages(stages, new Set(["Other"]));
+      expect(result[0].children).toHaveLength(1);
+      expect(result[0].collapsedChildCount).toBeUndefined();
+    });
+
+    it("should collapse recursively within non-collapsed parents", () => {
+      const stages: StageInfo[] = [
+        {
+          name: "Outer",
+          state: Result.success,
+          id: 1,
+          type: "STAGE",
+          children: [
+            {
+              name: "Inner",
+              state: Result.success,
+              id: 2,
+              type: "STAGE",
+              children: [
+                {
+                  name: "Leaf",
+                  state: Result.success,
+                  id: 3,
+                  type: "STAGE",
+                  children: [],
+                } as unknown as StageInfo,
+              ],
+            } as unknown as StageInfo,
+          ],
+        } as unknown as StageInfo,
+      ];
+      const result = collapseSelectiveStages(stages, new Set(["Inner"]));
+      expect(result[0].children).toHaveLength(1);
+      expect(result[0].children[0].children).toHaveLength(0);
+      expect(result[0].children[0].collapsedChildCount).toBe(1);
+    });
+
+    it("should count leaf stages through deep nesting", () => {
+      const stages: StageInfo[] = [
+        {
+          name: "Root",
+          state: Result.success,
+          id: 1,
+          type: "STAGE",
+          children: [
+            {
+              name: "Mid",
+              state: Result.success,
+              id: 2,
+              type: "STAGE",
+              children: [
+                {
+                  name: "Leaf1",
+                  state: Result.success,
+                  id: 3,
+                  type: "STAGE",
+                  children: [],
+                } as unknown as StageInfo,
+                {
+                  name: "Leaf2",
+                  state: Result.success,
+                  id: 4,
+                  type: "STAGE",
+                  children: [],
+                } as unknown as StageInfo,
+              ],
+            } as unknown as StageInfo,
+          ],
+        } as unknown as StageInfo,
+      ];
+      const result = collapseSelectiveStages(stages, new Set(["Root"]));
+      expect(result[0].collapsedChildCount).toBe(2);
+    });
+
+    it("should handle empty collapsedNames (no-op)", () => {
+      const stages: StageInfo[] = [
+        {
+          name: "Build",
+          state: Result.success,
+          id: 1,
+          type: "STAGE",
+          children: [
+            {
+              name: "Sub",
+              state: Result.success,
+              id: 2,
+              type: "STAGE",
+              children: [],
+            } as unknown as StageInfo,
+          ],
+        } as unknown as StageInfo,
+      ];
+      const result = collapseSelectiveStages(stages, new Set());
+      expect(result[0].children).toHaveLength(1);
+    });
+  });
+
+  describe("collectParentStageNames", () => {
+    it("should return empty set for leaf-only stages", () => {
+      const stages: StageInfo[] = [
+        {
+          name: "A",
+          state: Result.success,
+          id: 1,
+          type: "STAGE",
+          children: [],
+        } as unknown as StageInfo,
+        {
+          name: "B",
+          state: Result.success,
+          id: 2,
+          type: "STAGE",
+          children: [],
+        } as unknown as StageInfo,
+      ];
+      expect(collectParentStageNames(stages).size).toBe(0);
+    });
+
+    it("should collect top-level parent stage names", () => {
+      const stages: StageInfo[] = [
+        {
+          name: "Parent",
+          state: Result.success,
+          id: 1,
+          type: "STAGE",
+          children: [
+            {
+              name: "Child",
+              state: Result.success,
+              id: 2,
+              type: "STAGE",
+              children: [],
+            } as unknown as StageInfo,
+          ],
+        } as unknown as StageInfo,
+        {
+          name: "Leaf",
+          state: Result.success,
+          id: 3,
+          type: "STAGE",
+          children: [],
+        } as unknown as StageInfo,
+      ];
+      const result = collectParentStageNames(stages);
+      expect(result).toEqual(new Set(["Parent"]));
+    });
+
+    it("should collect nested parent stage names", () => {
+      const stages: StageInfo[] = [
+        {
+          name: "Root",
+          state: Result.success,
+          id: 1,
+          type: "STAGE",
+          children: [
+            {
+              name: "Mid",
+              state: Result.success,
+              id: 2,
+              type: "STAGE",
+              children: [
+                {
+                  name: "Leaf",
+                  state: Result.success,
+                  id: 3,
+                  type: "STAGE",
+                  children: [],
+                } as unknown as StageInfo,
+              ],
+            } as unknown as StageInfo,
+          ],
+        } as unknown as StageInfo,
+      ];
+      const result = collectParentStageNames(stages);
+      expect(result).toEqual(new Set(["Root", "Mid"]));
+    });
+  });
 });
 
 /**
@@ -266,6 +525,30 @@ function shouldMatchSnapshot(raw: string, collapsed: boolean) {
     !collapsed,
     collapsed,
   );
+  trimGraph(graph);
+  expect(graph).toMatchSnapshot();
+}
+
+function shouldMatchSelectiveSnapshot(
+  raw: string,
+  collapsedNames: Set<string>,
+) {
+  const stages = JSON.parse(raw) as StageInfo[];
+  const graph = nestedGraphLayout(
+    stages,
+    defaultLayout,
+    false,
+    defaultMessages(DEFAULT_LOCALE),
+    true,
+    false,
+    undefined,
+    collapsedNames,
+  );
+  trimGraph(graph);
+  expect(graph).toMatchSnapshot();
+}
+
+function trimGraph(graph: ReturnType<typeof nestedGraphLayout>) {
   for (const labels of [
     graph.smallLabels,
     graph.bigLabels,
@@ -284,5 +567,4 @@ function shouldMatchSnapshot(raw: string, collapsed: boolean) {
   for (const node of graph.allNodes) {
     trimGraphNode(node);
   }
-  expect(graph).toMatchSnapshot();
 }

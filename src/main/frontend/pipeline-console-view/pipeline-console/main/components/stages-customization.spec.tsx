@@ -8,20 +8,11 @@ import StagesCustomization from "./stages-customization.tsx";
 const {
   mockSetMainViewVisibility,
   mockSetStageViewPosition,
-  mockSetCollapseNestedStagesBuild,
   mockUseLayoutPreferences,
 } = vi.hoisted(() => ({
   mockSetMainViewVisibility: vi.fn(),
   mockSetStageViewPosition: vi.fn(),
-  mockSetCollapseNestedStagesBuild: vi.fn(),
   mockUseLayoutPreferences: vi.fn(),
-}));
-
-vi.mock("../../../../common/user/user-preferences-provider.tsx", () => ({
-  useUserPreferences: () => ({
-    collapseNestedStagesBuild: false,
-    setCollapseNestedStagesBuild: mockSetCollapseNestedStagesBuild,
-  }),
 }));
 
 vi.mock("../providers/user-preference-provider.tsx", () => ({
@@ -44,12 +35,11 @@ vi.mock("../providers/user-preference-provider.tsx", () => ({
 }));
 
 describe("StagesCustomization", () => {
-  it("should render Views, Graph position, and Nested stages controls", () => {
+  it("should render Views and Graph position controls", () => {
     render(<StagesCustomization />);
 
     expect(screen.getByText("Views")).toBeInTheDocument();
     expect(screen.getByText("Graph position")).toBeInTheDocument();
-    expect(screen.getByText("Nested stages")).toBeInTheDocument();
   });
 
   it("should show current values", () => {
@@ -57,7 +47,6 @@ describe("StagesCustomization", () => {
 
     expect(screen.getAllByText("Graph and stages").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Top").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Expanded").length).toBeGreaterThan(0);
   });
 
   it("should change view visibility on select", () => {
@@ -78,30 +67,6 @@ describe("StagesCustomization", () => {
     ) as HTMLSelectElement;
     fireEvent.change(positionSelect, { target: { value: "left" } });
     expect(mockSetStageViewPosition).toHaveBeenCalledWith("left");
-  });
-
-  it("should render nested stages select with Expanded/Collapsed options", () => {
-    render(<StagesCustomization />);
-
-    const nestedSelect = document.getElementById(
-      "pgv-nested-stages",
-    ) as HTMLSelectElement;
-    expect(nestedSelect.value).toBe("expanded");
-
-    const options = nestedSelect.querySelectorAll("option");
-    expect(options).toHaveLength(2);
-    expect(options[0].value).toBe("expanded");
-    expect(options[1].value).toBe("collapsed");
-  });
-
-  it("should call setCollapseNestedStagesBuild when nested stages select changes", () => {
-    render(<StagesCustomization />);
-
-    const nestedSelect = document.getElementById(
-      "pgv-nested-stages",
-    ) as HTMLSelectElement;
-    fireEvent.change(nestedSelect, { target: { value: "collapsed" } });
-    expect(mockSetCollapseNestedStagesBuild).toHaveBeenCalledWith(true);
   });
 
   it("should return null on mobile", () => {

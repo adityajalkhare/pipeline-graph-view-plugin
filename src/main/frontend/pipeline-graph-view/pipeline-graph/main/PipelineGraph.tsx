@@ -12,7 +12,10 @@ import { Context as TransformContext } from "react-zoom-pan-pinch";
 
 import { I18NContext } from "../../../common/i18n/index.ts";
 import { useUserPreferences } from "../../../common/user/user-preferences-provider.tsx";
-import { nestedGraphLayout } from "./NestedPipelineGraphLayout.ts";
+import {
+  collectParentStageNames,
+  nestedGraphLayout,
+} from "./NestedPipelineGraphLayout.ts";
 import {
   DEFAULT_MAX_COLUMNS_WHEN_COLLAPSED,
   layoutGraph,
@@ -50,8 +53,9 @@ export function PipelineGraph({
   layout,
   selectedStage,
   collapsed,
-  collapseNestedStages = false,
   onStageSelect,
+  collapsedStageNames: controlledCollapsedNames,
+  onToggleCollapse: controlledToggleCollapse,
 }: Props) {
   const fullLayout = useMemo(() => {
     return {
@@ -60,6 +64,81 @@ export function PipelineGraph({
     };
   }, [layout]);
   const { showNames, showDurations } = useUserPreferences();
+
+  const collapsedStageNamesKey = "pgv-graph-view.collapsedStageNames";
+
+  const [internalCollapsedNames, setInternalCollapsedNames] = useState<
+    Set<string>
+  >(() => {
+    if (controlledCollapsedNames) return new Set();
+    try {
+      const stored = window.localStorage.getItem(collapsedStageNamesKey);
+      if (stored) {
+        return new Set(JSON.parse(stored) as string[]);
+      }
+    } catch {
+      // ignore
+    }
+    return new Set();
+  });
+
+  const internalToggleCollapse = useCallback(
+    (stageName: string) => {
+      setInternalCollapsedNames((prev) => {
+        const next = new Set(prev);
+        if (next.has(stageName)) {
+          next.delete(stageName);
+        } else {
+          next.add(stageName);
+        }
+        try {
+          window.localStorage.setItem(
+            collapsedStageNamesKey,
+            JSON.stringify([...next]),
+          );
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    },
+    [collapsedStageNamesKey],
+  );
+
+  const collapsedStageNames =
+    controlledCollapsedNames ?? internalCollapsedNames;
+  const toggleCollapseStage =
+    controlledToggleCollapse ?? internalToggleCollapse;
+
+  // Seed internal collapsed state from admin default when uncontrolled.
+  const adminDefaultApplied = useRef(false);
+  useEffect(() => {
+    if (controlledCollapsedNames) return;
+    if (adminDefaultApplied.current) return;
+    if (stages.length === 0) return;
+    if (window.localStorage.getItem(collapsedStageNamesKey) != null) {
+      adminDefaultApplied.current = true;
+      return;
+    }
+    const prefEl = document.querySelector("[data-module='user-preferences']");
+    const collapseDefault =
+      prefEl instanceof HTMLElement
+        ? prefEl.dataset.preferenceCollapseNestedStages === "true"
+        : false;
+    if (collapseDefault) {
+      const allParents = collectParentStageNames(stages);
+      setInternalCollapsedNames(allParents);
+      try {
+        window.localStorage.setItem(
+          collapsedStageNamesKey,
+          JSON.stringify([...allParents]),
+        );
+      } catch {
+        // ignore
+      }
+    }
+    adminDefaultApplied.current = true;
+  }, [stages, controlledCollapsedNames, collapsedStageNamesKey]);
 
   const messages = useContext(I18NContext);
 
@@ -116,8 +195,8 @@ export function PipelineGraph({
         messages,
         showNames || !collapsed,
         showDurations,
-        collapseNestedStages,
         maxColumnsWhenCollapsed,
+        collapsedStageNames,
       );
     }
     return layoutGraph(
@@ -127,7 +206,7 @@ export function PipelineGraph({
       messages,
       showNames,
       showDurations,
-      collapseNestedStages,
+      false,
       maxColumnsWhenCollapsed,
     );
   }, [
@@ -137,8 +216,8 @@ export function PipelineGraph({
     messages,
     showNames,
     showDurations,
-    collapseNestedStages,
     maxColumnsWhenCollapsed,
+    collapsedStageNames,
   ]);
 
   const stageIsSelected = useCallback(
@@ -295,6 +374,10 @@ export function PipelineGraph({
             layout={fullLayout}
             measuredHeight={measuredHeight}
             isSelected={selectedStage?.id === label.stage?.id}
+            isCollapsed={
+              label.stage ? collapsedStageNames.has(label.stage.name) : false
+            }
+            onToggleCollapse={toggleCollapseStage}
           />
         ))}
 
@@ -314,6 +397,10 @@ export function PipelineGraph({
             details={label}
             layout={fullLayout}
             isSelected={selectedStage?.id === label.stage?.id}
+            isCollapsed={
+              label.stage ? collapsedStageNames.has(label.stage.name) : false
+            }
+            onToggleCollapse={toggleCollapseStage}
           />
         ))}
 
@@ -322,6 +409,10 @@ export function PipelineGraph({
             key={label.key}
             details={label}
             layout={fullLayout}
+            isCollapsed={
+              label.stage ? collapsedStageNames.has(label.stage.name) : false
+            }
+            onToggleCollapse={toggleCollapseStage}
           />
         ))}
       </div>
@@ -334,6 +425,7 @@ interface Props {
   layout?: Partial<LayoutInfo>;
   selectedStage?: StageInfo;
   collapsed?: boolean;
-  collapseNestedStages?: boolean;
   onStageSelect?: (nodeId: string) => void;
+  collapsedStageNames?: Set<string>;
+  onToggleCollapse?: (stageName: string) => void;
 }

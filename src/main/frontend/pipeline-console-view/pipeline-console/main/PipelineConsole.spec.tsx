@@ -44,10 +44,6 @@ vi.mock("../../../common/user/user-preferences-provider.tsx", () => ({
     setShowNames: () => {},
     showDurations: true,
     setShowDurations: () => {},
-    collapseNestedStagesOverview: false,
-    setCollapseNestedStagesOverview: () => {},
-    collapseNestedStagesBuild: false,
-    setCollapseNestedStagesBuild: () => {},
   }),
 }));
 

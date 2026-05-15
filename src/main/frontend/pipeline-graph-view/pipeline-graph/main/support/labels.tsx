@@ -17,6 +17,60 @@ function countLeafStages(stage: StageInfo): number {
   return stage.children.reduce((sum, child) => sum + countLeafStages(child), 0);
 }
 
+function getChildCount(stage: StageInfo | undefined): number {
+  if (!stage) return 0;
+  return stage.children.length > 0
+    ? countLeafStages(stage)
+    : (stage.collapsedChildCount ?? 0);
+}
+
+function CollapseBadge({
+  stage,
+  isCollapsed,
+  onToggleCollapse,
+}: {
+  stage: StageInfo | undefined;
+  isCollapsed?: boolean;
+  onToggleCollapse?: (stageName: string) => void;
+}) {
+  const childCount = getChildCount(stage);
+  if (childCount <= 0) return null;
+
+  const handleClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onToggleCollapse && stage) {
+      onToggleCollapse(stage.name);
+    }
+  };
+
+  return (
+    <span
+      className="PWGx-pipeline-collapse-badge"
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      title={isCollapsed ? "Expand nested stages" : "Collapse nested stages"}
+    >
+      ({childCount})
+      <svg
+        className={`PWGx-pipeline-collapse-chevron${isCollapsed ? "" : " PWGx-pipeline-collapse-chevron--expanded"}`}
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 512 512"
+      >
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="48"
+          d="M184 112l144 144-144 144"
+        />
+      </svg>
+    </span>
+  );
+}
+
 interface RenderBigLabelProps {
   details: NodeLabelInfo;
   layout: LayoutInfo;
@@ -75,49 +129,18 @@ function BigLabelImpl({
     classNames.push("pgv-graph-node--skeleton");
   }
 
-  const childCount =
-    details.stage && details.stage.children.length > 0
-      ? countLeafStages(details.stage)
-      : (details.stage?.collapsedChildCount ?? 0);
-
-  const handleBadgeClick = (e: MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (onToggleCollapse && details.stage) {
-      onToggleCollapse(details.stage.name);
-    }
-  };
+  const childCount = getChildCount(details.stage);
 
   return (
     <div className={classNames.join(" ")} style={style} key={details.key}>
       {childCount > 0 ? (
         <div className="PWGx-pipeline-big-label-content">
           <TruncatingLabel>{details.text}</TruncatingLabel>
-          <span
-            className="PWGx-pipeline-collapse-badge"
-            onClick={handleBadgeClick}
-            role="button"
-            tabIndex={0}
-            title={
-              isCollapsed ? "Expand nested stages" : "Collapse nested stages"
-            }
-          >
-            ({childCount})
-            <svg
-              className={`PWGx-pipeline-collapse-chevron${isCollapsed ? "" : " PWGx-pipeline-collapse-chevron--expanded"}`}
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 512 512"
-            >
-              <path
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="48"
-                d="M184 112l144 144-144 144"
-              />
-            </svg>
-          </span>
+          <CollapseBadge
+            stage={details.stage}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={onToggleCollapse}
+          />
         </div>
       ) : (
         <TruncatingLabel>{details.text}</TruncatingLabel>
@@ -237,44 +260,14 @@ function SmallLabelImpl({
     classNames.push("PWGx-pipeline-small-label--selected");
   }
 
-  const childCount = details.stage?.collapsedChildCount ?? 0;
-
-  const handleBadgeClick = (e: MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (onToggleCollapse && details.stage) {
-      onToggleCollapse(details.stage.name);
-    }
-  };
-
   return (
     <div className={classNames.join(" ")} style={style} key={details.key}>
       <TruncatingLabel>{details.text}</TruncatingLabel>
-      {childCount > 0 && (
-        <span
-          className="PWGx-pipeline-collapse-badge"
-          onClick={handleBadgeClick}
-          role="button"
-          tabIndex={0}
-          title="Expand nested stages"
-        >
-          ({childCount})
-          <svg
-            className="PWGx-pipeline-collapse-chevron"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 512 512"
-          >
-            <path
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="48"
-              d="M184 112l144 144-144 144"
-            />
-          </svg>
-        </span>
-      )}
+      <CollapseBadge
+        stage={details.stage}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={onToggleCollapse}
+      />
     </div>
   );
 }
@@ -302,10 +295,7 @@ function SequentialContainerLabelImpl({
 
   const lineHeight = 1.35;
 
-  const childCount =
-    details.stage && details.stage.children.length > 0
-      ? countLeafStages(details.stage)
-      : (details.stage?.collapsedChildCount ?? 0);
+  const childCount = getChildCount(details.stage);
 
   const containerStyle: CSSProperties = {
     top: y,
@@ -324,14 +314,6 @@ function SequentialContainerLabelImpl({
     gap: childCount > 0 ? "2px" : undefined,
   };
 
-  const handleBadgeClick = (e: MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (onToggleCollapse && details.stage) {
-      onToggleCollapse(details.stage.name);
-    }
-  };
-
   return (
     <TooltipLabel content={seqContainerName}>
       <div style={containerStyle} key={details.key}>
@@ -345,33 +327,11 @@ function SequentialContainerLabelImpl({
         >
           {seqContainerName}
         </span>
-        {childCount > 0 && (
-          <span
-            className="PWGx-pipeline-collapse-badge"
-            onClick={handleBadgeClick}
-            role="button"
-            tabIndex={0}
-            title={
-              isCollapsed ? "Expand nested stages" : "Collapse nested stages"
-            }
-          >
-            ({childCount})
-            <svg
-              className={`PWGx-pipeline-collapse-chevron${isCollapsed ? "" : " PWGx-pipeline-collapse-chevron--expanded"}`}
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 512 512"
-            >
-              <path
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="48"
-                d="M184 112l144 144-144 144"
-              />
-            </svg>
-          </span>
-        )}
+        <CollapseBadge
+          stage={details.stage}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={onToggleCollapse}
+        />
       </div>
     </TooltipLabel>
   );

@@ -29,6 +29,20 @@ export function nestedGraphLayout(
       : stages;
   const graphSpacingX = layout.nodeSpacingH / 4;
   const startEndReducedSpacing = Math.floor(layout.nodeSpacingH * 0.3);
+  // Parallel groups need full spacing for the forking/merging curves.
+  // Only reduce spacing when the adjacent stage is sequential.
+  const firstIsParallel =
+    !collapsed &&
+    effectiveStages.length > 0 &&
+    effectiveStages[0].children.length > 0 &&
+    effectiveStages[0].children[0].type === "PARALLEL";
+  const lastIsParallel =
+    !collapsed &&
+    effectiveStages.length > 0 &&
+    effectiveStages[effectiveStages.length - 1].children.length > 0 &&
+    effectiveStages[effectiveStages.length - 1].children[0].type === "PARALLEL";
+  const startReduction = firstIsParallel ? 0 : startEndReducedSpacing;
+  const endReduction = lastIsParallel ? 0 : startEndReducedSpacing;
   const root: GraphNode = {
     ...baseGraphNode(layout),
     shiftX: graphSpacingX,
@@ -41,7 +55,7 @@ export function nestedGraphLayout(
     children: [
       {
         ...baseGraphNode(layout, showNames),
-        width: layout.nodeSpacingH - startEndReducedSpacing,
+        width: layout.nodeSpacingH - startReduction,
         isPlaceholder: true,
         type: "start",
         name: messages.format(LocalizedMessageKey.start),
@@ -69,7 +83,7 @@ export function nestedGraphLayout(
   root.children.push({
     ...baseGraphNode(layout, showNames),
     width: graphSpacingX,
-    shiftX: -startEndReducedSpacing,
+    shiftX: -endReduction,
     isPlaceholder: true,
     type: "end",
     name: messages.format(LocalizedMessageKey.end),
@@ -77,7 +91,7 @@ export function nestedGraphLayout(
     id: -3,
   });
   root.width =
-    root.shiftX + sumGraphNodeProp(root, "width") - startEndReducedSpacing;
+    root.shiftX + sumGraphNodeProp(root, "width") - endReduction;
   const measuredWidth = root.width;
   const measuredHeight = root.y + root.height;
 

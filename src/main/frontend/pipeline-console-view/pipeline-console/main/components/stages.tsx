@@ -1,6 +1,6 @@
 import "./stages.scss";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ReactZoomPanPinchContextState,
   TransformComponent,
@@ -14,6 +14,7 @@ import { classNames } from "../../../../common/utils/classnames.ts";
 import { collectParentStageNames } from "../../../../pipeline-graph-view/pipeline-graph/main/NestedPipelineGraphLayout.ts";
 import { PipelineGraph } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraph.tsx";
 import { StageInfo } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraphModel.tsx";
+import { useCollapsedStages } from "../../../../pipeline-graph-view/pipeline-graph/main/support/useCollapsedStages.ts";
 import { StageViewPosition } from "../providers/user-preference-provider.tsx";
 
 const MAX_SCALE = 3;
@@ -27,92 +28,21 @@ export default function Stages({
 }: StagesProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const collapsedStageNamesKey = "pgv.collapsedStages.build";
-
-  const [collapsedStageNames, setCollapsedStageNames] = useState<Set<string>>(
-    () => {
-      try {
-        const stored = window.localStorage.getItem(collapsedStageNamesKey);
-        if (stored) {
-          return new Set(JSON.parse(stored) as string[]);
-        }
-      } catch {
-        // ignore
-      }
-      return new Set();
-    },
-  );
-
-  const persistCollapsedNames = useCallback(
-    (names: Set<string>) => {
-      setCollapsedStageNames(names);
-      try {
-        window.localStorage.setItem(
-          collapsedStageNamesKey,
-          JSON.stringify([...names]),
-        );
-      } catch {
-        // ignore
-      }
-    },
-    [collapsedStageNamesKey],
-  );
-
-  const toggleCollapseStage = useCallback(
-    (stageName: string) => {
-      setCollapsedStageNames((prev) => {
-        const next = new Set(prev);
-        if (next.has(stageName)) {
-          next.delete(stageName);
-        } else {
-          next.add(stageName);
-        }
-        try {
-          window.localStorage.setItem(
-            collapsedStageNamesKey,
-            JSON.stringify([...next]),
-          );
-        } catch {
-          // ignore
-        }
-        return next;
-      });
-    },
-    [collapsedStageNamesKey],
-  );
+  const { collapsedStageNames, toggleCollapseStage, setCollapsedNames } =
+    useCollapsedStages("pgv.collapsedStages.build", stages);
 
   const handleCollapseAll = useCallback(() => {
-    persistCollapsedNames(collectParentStageNames(stages));
-  }, [stages, persistCollapsedNames]);
+    setCollapsedNames(collectParentStageNames(stages));
+  }, [stages, setCollapsedNames]);
 
   const handleExpandAll = useCallback(() => {
-    persistCollapsedNames(new Set());
-  }, [persistCollapsedNames]);
+    setCollapsedNames(new Set());
+  }, [setCollapsedNames]);
 
   const hasCollapsibleStages = useMemo(
     () => collectParentStageNames(stages).size > 0,
     [stages],
   );
-
-  // Seed collapsed state from admin default when no localStorage state exists.
-  const adminDefaultApplied = useRef(false);
-  useEffect(() => {
-    if (adminDefaultApplied.current) return;
-    if (stages.length === 0) return;
-    if (window.localStorage.getItem(collapsedStageNamesKey) != null) {
-      adminDefaultApplied.current = true;
-      return;
-    }
-    const prefEl = document.querySelector("[data-module='user-preferences']");
-    const collapseDefault =
-      prefEl instanceof HTMLElement
-        ? prefEl.dataset.preferenceCollapseNestedStages === "true"
-        : false;
-    if (collapseDefault) {
-      persistCollapsedNames(collectParentStageNames(stages));
-    }
-    adminDefaultApplied.current = true;
-  }, [stages, collapsedStageNamesKey, persistCollapsedNames]);
 
   const handleStageSelect = useCallback(
     (nodeId: string) => {

@@ -12,10 +12,7 @@ import { Context as TransformContext } from "react-zoom-pan-pinch";
 
 import { I18NContext } from "../../../common/i18n/index.ts";
 import { useUserPreferences } from "../../../common/user/user-preferences-provider.tsx";
-import {
-  collectParentStageNames,
-  nestedGraphLayout,
-} from "./NestedPipelineGraphLayout.ts";
+import { nestedGraphLayout } from "./NestedPipelineGraphLayout.ts";
 import {
   DEFAULT_MAX_COLUMNS_WHEN_COLLAPSED,
   layoutGraph,
@@ -36,6 +33,7 @@ import {
   TimingsLabel,
 } from "./support/labels.tsx";
 import { Node, SelectionHighlight } from "./support/nodes.tsx";
+import { useCollapsedStages } from "./support/useCollapsedStages.ts";
 
 interface Viewport {
   x: number;
@@ -67,80 +65,15 @@ export function PipelineGraph({
   }, [layout]);
   const { showNames, showDurations } = useUserPreferences();
 
-  const collapsedStageNamesKey = "pgv-graph-view.collapsedStageNames";
-
-  const [internalCollapsedNames, setInternalCollapsedNames] = useState<
-    Set<string>
-  >(() => {
-    if (controlledCollapsedNames) return new Set();
-    try {
-      const stored = window.localStorage.getItem(collapsedStageNamesKey);
-      if (stored) {
-        return new Set(JSON.parse(stored) as string[]);
-      }
-    } catch {
-      // ignore
-    }
-    return new Set();
-  });
-
-  const internalToggleCollapse = useCallback(
-    (stageName: string) => {
-      setInternalCollapsedNames((prev) => {
-        const next = new Set(prev);
-        if (next.has(stageName)) {
-          next.delete(stageName);
-        } else {
-          next.add(stageName);
-        }
-        try {
-          window.localStorage.setItem(
-            collapsedStageNamesKey,
-            JSON.stringify([...next]),
-          );
-        } catch {
-          // ignore
-        }
-        return next;
-      });
-    },
-    [collapsedStageNamesKey],
+  const internal = useCollapsedStages(
+    "pgv-graph-view.collapsedStageNames",
+    controlledCollapsedNames ? [] : stages,
   );
 
   const collapsedStageNames =
-    controlledCollapsedNames ?? internalCollapsedNames;
+    controlledCollapsedNames ?? internal.collapsedStageNames;
   const toggleCollapseStage =
-    controlledToggleCollapse ?? internalToggleCollapse;
-
-  // Seed internal collapsed state from admin default when uncontrolled.
-  const adminDefaultApplied = useRef(false);
-  useEffect(() => {
-    if (controlledCollapsedNames) return;
-    if (adminDefaultApplied.current) return;
-    if (stages.length === 0) return;
-    if (window.localStorage.getItem(collapsedStageNamesKey) != null) {
-      adminDefaultApplied.current = true;
-      return;
-    }
-    const prefEl = document.querySelector("[data-module='user-preferences']");
-    const collapseDefault =
-      prefEl instanceof HTMLElement
-        ? prefEl.dataset.preferenceCollapseNestedStages === "true"
-        : false;
-    if (collapseDefault) {
-      const allParents = collectParentStageNames(stages);
-      setInternalCollapsedNames(allParents);
-      try {
-        window.localStorage.setItem(
-          collapsedStageNamesKey,
-          JSON.stringify([...allParents]),
-        );
-      } catch {
-        // ignore
-      }
-    }
-    adminDefaultApplied.current = true;
-  }, [stages, controlledCollapsedNames, collapsedStageNamesKey]);
+    controlledToggleCollapse ?? internal.toggleCollapseStage;
 
   const messages = useContext(I18NContext);
 
@@ -208,7 +141,6 @@ export function PipelineGraph({
       messages,
       showNames,
       showDurations,
-      false,
       maxColumnsWhenCollapsed,
     );
   }, [

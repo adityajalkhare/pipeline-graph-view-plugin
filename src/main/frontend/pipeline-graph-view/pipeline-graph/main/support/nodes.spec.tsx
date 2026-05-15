@@ -57,7 +57,6 @@ describe("Counter node with 50+ parallel stages", () => {
       defaultMessages(DEFAULT_LOCALE),
       false,
       false,
-      false,
       maxColumns,
     );
   const counterFor = (graph: ReturnType<typeof buildGraphWithManyStages>) => {

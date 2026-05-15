@@ -90,8 +90,7 @@ export function nestedGraphLayout(
     key: "end-node",
     id: -3,
   });
-  root.width =
-    root.shiftX + sumGraphNodeProp(root, "width") - endReduction;
+  root.width = root.shiftX + sumGraphNodeProp(root, "width") - endReduction;
   const measuredWidth = root.width;
   const measuredHeight = root.y + root.height;
 

@@ -27,7 +27,7 @@ export function nestedGraphLayout(
     collapsedStageNames.size > 0
       ? collapseSelectiveStages(stages, collapsedStageNames)
       : stages;
-  const graphSpacingX = layout.nodeSpacingH / 2;
+  const graphSpacingX = layout.nodeSpacingH / 4;
   const startEndReducedSpacing = Math.floor(layout.nodeSpacingH * 0.3);
   const root: GraphNode = {
     ...baseGraphNode(layout),
@@ -64,10 +64,8 @@ export function nestedGraphLayout(
     buildGraphNested(root, effectiveStages, layout, false);
   }
 
-  root.y = Math.max(
-    layout.ypStart,
-    root.shiftY + (showNames ? layout.nodeRadius + layout.labelOffsetV : 0),
-  );
+  root.y =
+    root.shiftY + (showNames ? layout.nodeRadius + layout.labelOffsetV : 0);
   root.children.push({
     ...baseGraphNode(layout, showNames),
     width: graphSpacingX,
@@ -120,6 +118,7 @@ function roundToMultipleOf(n: number, multiple: number): number {
 }
 
 function centerOfNode(node: GraphNode, layout: LayoutInfo) {
+  if (node.isPlaceholder) return node.x;
   return (
     node.x +
     roundToMultipleOf(

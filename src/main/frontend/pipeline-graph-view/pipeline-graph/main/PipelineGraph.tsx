@@ -122,7 +122,7 @@ export function PipelineGraph({
     measuredWidth,
     measuredHeight,
   } = useMemo(() => {
-    if (nestedLayout()) {
+    if (nestedLayout() || controlledCollapsedNames !== undefined) {
       return nestedGraphLayout(
         stages,
         fullLayout,
@@ -147,6 +147,7 @@ export function PipelineGraph({
     stages,
     fullLayout,
     collapsed,
+    controlledCollapsedNames,
     messages,
     showNames,
     showDurations,

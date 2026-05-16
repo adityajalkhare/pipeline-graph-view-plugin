@@ -77,7 +77,7 @@ describe("BigLabel", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
-  it("renders collapse badge when stage has children", () => {
+  it("renders collapse badge when stage has parallel children", () => {
     const child1 = makeStage({ name: "Unit", id: 10 });
     const child2 = makeStage({ name: "Integration", id: 11 });
     const stage = makeStage({ children: [child1, child2] });

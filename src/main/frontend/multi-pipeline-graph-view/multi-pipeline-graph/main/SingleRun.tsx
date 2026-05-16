@@ -15,6 +15,7 @@ import {
   defaultLayout,
   LayoutInfo,
 } from "../../../pipeline-graph-view/pipeline-graph/main/PipelineGraphModel.tsx";
+import { useCollapsedStages } from "../../../pipeline-graph-view/pipeline-graph/main/support/useCollapsedStages.ts";
 import { RunInfo } from "./MultiPipelineGraphModel.ts";
 
 export default function SingleRun({ run, currentJobPath }: SingleRunProps) {
@@ -63,6 +64,9 @@ export default function SingleRun({ run, currentJobPath }: SingleRunProps) {
     return layout;
   }
 
+  const { effectiveStages, collapsedStageNames, toggleCollapseStage } =
+    useCollapsedStages("pgv.collapsedStages." + currentJobPath, runInfo.stages);
+
   return (
     <div className="pgv-single-run">
       <div>
@@ -75,7 +79,13 @@ export default function SingleRun({ run, currentJobPath }: SingleRunProps) {
           </span>
         </a>
       </div>
-      <PipelineGraph stages={runInfo.stages} layout={getLayout()} collapsed />
+      <PipelineGraph
+        stages={effectiveStages}
+        layout={getLayout()}
+        collapsed
+        collapsedStageNames={collapsedStageNames}
+        onToggleCollapse={toggleCollapseStage}
+      />
     </div>
   );
 }

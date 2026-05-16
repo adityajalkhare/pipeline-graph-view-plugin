@@ -1,5 +1,6 @@
 import { CSSProperties, memo, MouseEvent } from "react";
 
+import { classNames } from "../../../../common/utils/classnames.ts";
 import LiveTotal from "../../../../common/utils/live-total.tsx";
 import {
   LayoutInfo,
@@ -54,7 +55,9 @@ function CollapseBadge({
     >
       ({childCount})
       <svg
-        className={`PWGx-pipeline-collapse-chevron${isCollapsed ? "" : " PWGx-pipeline-collapse-chevron--expanded"}`}
+        className={classNames("PWGx-pipeline-collapse-chevron", {
+          "PWGx-pipeline-collapse-chevron--expanded": !isCollapsed,
+        })}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 512 512"
       >

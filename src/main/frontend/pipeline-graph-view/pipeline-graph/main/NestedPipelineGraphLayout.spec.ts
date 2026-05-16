@@ -2,7 +2,6 @@ import { DEFAULT_LOCALE } from "../../../common/i18n/index.ts";
 import { defaultMessages } from "../../../common/i18n/messages.ts";
 import {
   collapseSelectiveStages,
-  collapseStages,
   collectParentStageNames,
   nestedGraphLayout,
   removeFalseOptionalGraphNodeFlags,
@@ -102,145 +101,6 @@ describe("NestedPipelineGraphLayout", () => {
       it("should render layout with top-level stage collapsed", () => {
         shouldMatchSelectiveSnapshot(raw, new Set(["Parallel Stage"]));
       });
-    });
-  });
-
-  describe("collapseStages", () => {
-    it("should strip children and keep leaf stages unchanged", () => {
-      const stages: StageInfo[] = [
-        {
-          name: "Build",
-          state: Result.success,
-          id: 1,
-          type: "STAGE",
-          children: [],
-        } as unknown as StageInfo,
-      ];
-      const result = collapseStages(stages);
-      expect(result).toHaveLength(1);
-      expect(result[0].children).toHaveLength(0);
-      expect(result[0].name).toBe("Build");
-    });
-
-    it("should remove children from parent stages", () => {
-      const stages: StageInfo[] = [
-        {
-          name: "Post",
-          state: Result.success,
-          id: 1,
-          type: "STAGE",
-          children: [
-            {
-              name: "Notifications",
-              state: Result.success,
-              id: 2,
-              type: "STAGE",
-              children: [],
-            } as unknown as StageInfo,
-            {
-              name: "Telemetry",
-              state: Result.success,
-              id: 3,
-              type: "STAGE",
-              children: [],
-            } as unknown as StageInfo,
-          ],
-        } as unknown as StageInfo,
-      ];
-      const result = collapseStages(stages);
-      expect(result).toHaveLength(1);
-      expect(result[0].children).toHaveLength(0);
-      expect(result[0].state).toBe(Result.success);
-    });
-
-    it("should aggregate worst child state to parent", () => {
-      const stages: StageInfo[] = [
-        {
-          name: "Post",
-          state: Result.success,
-          id: 1,
-          type: "STAGE",
-          children: [
-            {
-              name: "Notifications",
-              state: Result.success,
-              id: 2,
-              type: "STAGE",
-              children: [],
-            } as unknown as StageInfo,
-            {
-              name: "Telemetry",
-              state: Result.failure,
-              id: 3,
-              type: "STAGE",
-              children: [],
-            } as unknown as StageInfo,
-          ],
-        } as unknown as StageInfo,
-      ];
-      const result = collapseStages(stages);
-      expect(result[0].state).toBe(Result.failure);
-    });
-
-    it("should collapse parallel branches", () => {
-      const stages: StageInfo[] = [
-        {
-          name: "Parallel Build",
-          state: Result.success,
-          id: 1,
-          type: "STAGE",
-          children: [
-            {
-              name: "Windows",
-              state: Result.success,
-              id: 2,
-              type: "PARALLEL",
-              children: [],
-            } as unknown as StageInfo,
-            {
-              name: "Linux",
-              state: Result.unstable,
-              id: 3,
-              type: "PARALLEL",
-              children: [],
-            } as unknown as StageInfo,
-          ],
-        } as unknown as StageInfo,
-      ];
-      const result = collapseStages(stages);
-      expect(result).toHaveLength(1);
-      expect(result[0].children).toHaveLength(0);
-      expect(result[0].state).toBe(Result.unstable);
-    });
-
-    it("should aggregate deeply nested child state", () => {
-      const stages: StageInfo[] = [
-        {
-          name: "Parent",
-          state: Result.success,
-          id: 1,
-          type: "STAGE",
-          children: [
-            {
-              name: "Child",
-              state: Result.success,
-              id: 2,
-              type: "STAGE",
-              children: [
-                {
-                  name: "Grandchild",
-                  state: Result.aborted,
-                  id: 3,
-                  type: "STAGE",
-                  children: [],
-                } as unknown as StageInfo,
-              ],
-            } as unknown as StageInfo,
-          ],
-        } as unknown as StageInfo,
-      ];
-      const result = collapseStages(stages);
-      expect(result[0].state).toBe(Result.aborted);
     });
   });
 
@@ -545,7 +405,10 @@ function shouldMatchSelectiveSnapshot(
   raw: string,
   collapsedNames: Set<string>,
 ) {
-  const stages = JSON.parse(raw) as StageInfo[];
+  const stages = collapseSelectiveStages(
+    JSON.parse(raw) as StageInfo[],
+    collapsedNames,
+  );
   const graph = nestedGraphLayout(
     stages,
     defaultLayout,
@@ -553,8 +416,6 @@ function shouldMatchSelectiveSnapshot(
     defaultMessages(DEFAULT_LOCALE),
     true,
     false,
-    undefined,
-    collapsedNames,
   );
   trimGraph(graph);
   expect(graph).toMatchSnapshot();

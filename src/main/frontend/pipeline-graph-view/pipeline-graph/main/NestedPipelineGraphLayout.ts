@@ -21,26 +21,21 @@ export function nestedGraphLayout(
   showNames: boolean,
   showDurations: boolean,
   maxColumnsWhenCollapsed: number = DEFAULT_MAX_COLUMNS_WHEN_COLLAPSED,
-  collapsedStageNames: Set<string> = new Set(),
 ): PositionedGraph {
-  const effectiveStages =
-    collapsedStageNames.size > 0
-      ? collapseSelectiveStages(stages, collapsedStageNames)
-      : stages;
   const graphSpacingX = layout.nodeSpacingH / 4;
   const startEndReducedSpacing = Math.floor(layout.nodeSpacingH * 0.3);
   // Parallel groups need full spacing for the forking/merging curves.
   // Only reduce spacing when the adjacent stage is sequential.
   const firstIsParallel =
     !collapsed &&
-    effectiveStages.length > 0 &&
-    effectiveStages[0].children.length > 0 &&
-    effectiveStages[0].children[0].type === "PARALLEL";
+    stages.length > 0 &&
+    stages[0].children.length > 0 &&
+    stages[0].children[0].type === "PARALLEL";
   const lastIsParallel =
     !collapsed &&
-    effectiveStages.length > 0 &&
-    effectiveStages[effectiveStages.length - 1].children.length > 0 &&
-    effectiveStages[effectiveStages.length - 1].children[0].type === "PARALLEL";
+    stages.length > 0 &&
+    stages[stages.length - 1].children.length > 0 &&
+    stages[stages.length - 1].children[0].type === "PARALLEL";
   const startReduction = firstIsParallel ? 0 : startEndReducedSpacing;
   const endReduction = lastIsParallel ? 0 : startEndReducedSpacing;
   const root: GraphNode = {
@@ -67,7 +62,7 @@ export function nestedGraphLayout(
 
   if (collapsed) {
     buildGraphCollapsed(
-      effectiveStages,
+      stages,
       root,
       layout,
       showNames,
@@ -75,7 +70,7 @@ export function nestedGraphLayout(
       maxColumnsWhenCollapsed,
     );
   } else {
-    buildGraphNested(root, effectiveStages, layout, false);
+    buildGraphNested(root, stages, layout, false);
   }
 
   root.y =
@@ -104,7 +99,7 @@ export function nestedGraphLayout(
   const timings = computeTimingsLabels(nodes, layout);
 
   const debug = debugPipelineGraph();
-  if (debug) printDebugInfo(effectiveStages, root, nodes, connections);
+  if (debug) printDebugInfo(stages, root, nodes, connections);
   return {
     nodes: debug ? nodes : visibleNodes,
     allNodes: nodes,
@@ -173,25 +168,26 @@ function worstState(a: Result, b: Result): Result {
   return (STATE_PRIORITY[a] ?? 9) <= (STATE_PRIORITY[b] ?? 9) ? a : b;
 }
 
-function aggregateChildState(stage: StageInfo): Result {
-  let state = stage.state;
-  for (const child of stage.children) {
-    state = worstState(state, aggregateChildState(child));
-  }
-  return state;
+function isTransparentState(state: Result): boolean {
+  return state === Result.skipped || state === Result.not_built;
 }
 
-export function collapseStages(stages: StageInfo[]): StageInfo[] {
-  return stages.map((stage) => {
-    if (stage.children.length === 0) {
-      return stage;
+function aggregateChildState(stage: StageInfo): Result {
+  let all = stage.state;
+  let nonTransparent: Result | null = isTransparentState(stage.state)
+    ? null
+    : stage.state;
+  for (const child of stage.children) {
+    const childState = aggregateChildState(child);
+    all = worstState(all, childState);
+    if (!isTransparentState(childState)) {
+      nonTransparent =
+        nonTransparent == null
+          ? childState
+          : worstState(nonTransparent, childState);
     }
-    return {
-      ...stage,
-      children: [],
-      state: aggregateChildState(stage),
-    };
-  });
+  }
+  return nonTransparent ?? all;
 }
 
 export function collapseSelectiveStages(
@@ -332,7 +328,7 @@ function buildGraphNested(
       hasChildren &&
       // Do not add a branch label on the parent of a nested parallel. Instead, show a big label on the nested parallel block.
       !isChainedParallel;
-    const isHidden = hasBranchLabel || hasParallel || isChainedParallel;
+    const isHidden = hasBranchLabel || hasChildren || isChainedParallel;
     const hasBigLabel =
       hasParallel ||
       (stage.type === "STAGE" && hasChildren && !hasBranchLabel) ||

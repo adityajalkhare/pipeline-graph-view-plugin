@@ -126,7 +126,6 @@ export default function StagesCustomization() {
           <option value={StageViewPosition.LEFT}>Left</option>
         </select>
       </label>
-
       <div className="jenkins-dropdown__separator" />
     </>
   );

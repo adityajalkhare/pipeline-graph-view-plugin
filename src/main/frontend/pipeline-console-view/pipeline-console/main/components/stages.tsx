@@ -1,6 +1,6 @@
 import "./stages.scss";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ReactZoomPanPinchContextState,
   TransformComponent,
@@ -11,10 +11,12 @@ import {
 
 import Tooltip from "../../../../common/components/tooltip.tsx";
 import { classNames } from "../../../../common/utils/classnames.ts";
-import { collectParentStageNames } from "../../../../pipeline-graph-view/pipeline-graph/main/NestedPipelineGraphLayout.ts";
 import { PipelineGraph } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraph.tsx";
 import { StageInfo } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraphModel.tsx";
-import { useCollapsedStages } from "../../../../pipeline-graph-view/pipeline-graph/main/support/useCollapsedStages.ts";
+import {
+  deriveJobPath,
+  useCollapsedStages,
+} from "../../../../pipeline-graph-view/pipeline-graph/main/support/useCollapsedStages.ts";
 import { StageViewPosition } from "../providers/user-preference-provider.tsx";
 
 const MAX_SCALE = 3;
@@ -28,20 +30,17 @@ export default function Stages({
 }: StagesProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { collapsedStageNames, toggleCollapseStage, setCollapsedNames } =
-    useCollapsedStages("pgv.collapsedStages.build", stages);
-
-  const handleCollapseAll = useCallback(() => {
-    setCollapsedNames(collectParentStageNames(stages));
-  }, [stages, setCollapsedNames]);
-
-  const handleExpandAll = useCallback(() => {
-    setCollapsedNames(new Set());
-  }, [setCollapsedNames]);
-
-  const hasCollapsibleStages = useMemo(
-    () => collectParentStageNames(stages).size > 0,
-    [stages],
+  const {
+    collapsedStageNames,
+    toggleCollapseStage,
+    collapseAll,
+    expandAll,
+    hasCollapsibleStages,
+    effectiveStages,
+  } = useCollapsedStages(
+    "pgv.collapsedStages." + deriveJobPath(),
+    stages,
+    selectedStage?.id,
   );
 
   const handleStageSelect = useCallback(
@@ -130,13 +129,13 @@ export default function Stages({
           minScale={minScale}
           collapsedStageNames={collapsedStageNames}
           hasCollapsibleStages={hasCollapsibleStages}
-          onCollapseAll={handleCollapseAll}
-          onExpandAll={handleExpandAll}
+          onCollapseAll={collapseAll}
+          onExpandAll={expandAll}
         />
 
         <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
           <PipelineGraph
-            stages={stages}
+            stages={effectiveStages}
             selectedStage={selectedStage}
             collapsedStageNames={collapsedStageNames}
             onToggleCollapse={toggleCollapseStage}

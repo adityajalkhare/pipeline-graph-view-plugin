@@ -12,7 +12,10 @@ import { Context as TransformContext } from "react-zoom-pan-pinch";
 
 import { I18NContext } from "../../../common/i18n/index.ts";
 import { useUserPreferences } from "../../../common/user/user-preferences-provider.tsx";
-import { nestedGraphLayout } from "./NestedPipelineGraphLayout.ts";
+import {
+  collapseSelectiveStages,
+  nestedGraphLayout,
+} from "./NestedPipelineGraphLayout.ts";
 import {
   DEFAULT_MAX_COLUMNS_WHEN_COLLAPSED,
   layoutGraph,
@@ -122,20 +125,23 @@ export function PipelineGraph({
     measuredWidth,
     measuredHeight,
   } = useMemo(() => {
-    if (nestedLayout() || controlledCollapsedNames !== undefined) {
+    const effectiveStages =
+      collapsedStageNames.size > 0
+        ? collapseSelectiveStages(stages, collapsedStageNames)
+        : stages;
+    if (nestedLayout()) {
       return nestedGraphLayout(
-        stages,
+        effectiveStages,
         fullLayout,
         collapsed ?? false,
         messages,
         showNames || !collapsed,
         showDurations,
         maxColumnsWhenCollapsed,
-        collapsedStageNames,
       );
     }
     return layoutGraph(
-      stages,
+      effectiveStages,
       fullLayout,
       collapsed ?? false,
       messages,
@@ -147,7 +153,6 @@ export function PipelineGraph({
     stages,
     fullLayout,
     collapsed,
-    controlledCollapsedNames,
     messages,
     showNames,
     showDurations,

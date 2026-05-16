@@ -1,3 +1,22 @@
+/**
+ * Snapshot tests for NestedPipelineGraphLayout
+ *
+ * The Jenkinsfiles for all the tests-suites below are located in "src/test/resources/io/jenkins/plugins/pipelinegraphview/utils".
+ *
+ * After making changes to the stages tree/data structure, consider loading up
+ * the pipelines and updating the "raw" snapshots below:
+ * 1. Create a new pipeline job for each of the pipelines listed below.
+ * 2. Trigger a new run for a pipeline.
+ * 3. Open the stages view with query flag "?debugPipelineGraph=1".
+ * 4. In the browser console, locate the JSON blob after "For test snapshot".
+ * 5. Copy and paste it into the "raw" snapshots below.
+ * 6. Go to 2. with the next pipeline.
+ *
+ * In case there are any changes, confirm visually that these are desired:
+ * Open the stages view before and after making the changes and compare them.
+ * In case the changes are desired, update the vitest snapshots.
+ */
+
 import { DEFAULT_LOCALE } from "../../../common/i18n/index.ts";
 import { defaultMessages } from "../../../common/i18n/messages.ts";
 import {
@@ -66,6 +85,18 @@ describe("NestedPipelineGraphLayout", () => {
     describe("gh1155_smokeTest.jenkinsfile", () => {
       const raw =
         '[{"name":"Parallel","state":"unstable","id":"5","type":"PARALLEL_BLOCK","children":[{"name":"A","state":"success","id":"8","type":"PARALLEL","children":[{"name":"Checkout","state":"success","id":"12","type":"STAGE","children":[]},{"name":"Test","state":"success","id":"26","type":"STAGE","children":[{"name":"A1","state":"success","id":"35","type":"PARALLEL","children":[]},{"name":"A2","state":"success","id":"36","type":"PARALLEL","children":[]},{"name":"A3","state":"success","id":"37","type":"PARALLEL","children":[]}]},{"name":"Test 2","state":"success","id":"67","type":"STAGE","children":[{"name":"A1","state":"success","id":"72","type":"PARALLEL","children":[]},{"name":"A2","state":"success","id":"73","type":"PARALLEL","children":[]}]},{"name":"Coverage","state":"success","id":"99","type":"STAGE","children":[]}]},{"name":"B","state":"unstable","id":"9","type":"PARALLEL","children":[{"name":"Checkout","state":"success","id":"14","type":"STAGE","children":[]},{"name":"Build","state":"success","id":"28","type":"STAGE","children":[]},{"name":"Parallel","state":"unstable","id":"49","type":"PARALLEL_BLOCK","children":[{"name":"B1","state":"success","id":"51","type":"PARALLEL","children":[]},{"name":"B2","state":"unstable","id":"52","type":"PARALLEL","children":[]}]},{"name":"Archive","state":"success","id":"85","type":"STAGE","children":[]}]},{"name":"C","state":"success","id":"10","type":"PARALLEL","children":[{"name":"Stage - 1","state":"success","id":"16","type":"STAGE","children":[]},{"name":"Stage - 2","state":"success","id":"31","type":"STAGE","children":[]},{"name":"Stage - 3","state":"success","id":"57","type":"STAGE","children":[]},{"name":"Stage - 4","state":"success","id":"76","type":"STAGE","children":[]},{"name":"Stage - 5","state":"success","id":"92","type":"STAGE","children":[]},{"name":"Stage - 6","state":"success","id":"104","type":"STAGE","children":[]},{"name":"Stage - 7","state":"success","id":"111","type":"STAGE","children":[]}]}]}]';
+
+      it("should render layout", () => {
+        shouldMatchSnapshot(raw, false);
+      });
+      it("should render collapsed layout", () => {
+        shouldMatchSnapshot(raw, true);
+      });
+    });
+
+    describe("gh1286_wrapped_all_skipped.jenkinsfile", () => {
+      const raw =
+        '[{"name":"Wrapper","state":"success","id":"4","type":"STAGE","children":[{"name":"Skipped 1","state":"skipped","id":"6","type":"STAGE","children":[]},{"name":"Skipped 2","state":"skipped","id":"10","type":"STAGE","children":[]}]},{"name":"Next","state":"success","id":"16","type":"STAGE","children":[]}]';
 
       it("should render layout", () => {
         shouldMatchSnapshot(raw, false);

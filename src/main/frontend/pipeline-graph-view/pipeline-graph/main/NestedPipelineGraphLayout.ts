@@ -22,7 +22,7 @@ export function nestedGraphLayout(
   showDurations: boolean,
   maxColumnsWhenCollapsed: number = DEFAULT_MAX_COLUMNS_WHEN_COLLAPSED,
 ): PositionedGraph {
-  const graphSpacingX = layout.nodeSpacingH / 2;
+  const graphSpacingX = layout.nodeSpacingH / 4;
   const startEndReducedSpacing = Math.floor(layout.nodeSpacingH * 0.3);
   const root: GraphNode = {
     ...baseGraphNode(layout),
@@ -59,10 +59,8 @@ export function nestedGraphLayout(
     buildGraphNested(root, stages, layout, false);
   }
 
-  root.y = Math.max(
-    layout.ypStart,
-    root.shiftY + (showNames ? layout.nodeRadius + layout.labelOffsetV : 0),
-  );
+  root.y =
+    root.shiftY + (showNames ? layout.nodeRadius + layout.labelOffsetV : 0);
   root.children.push({
     ...baseGraphNode(layout, showNames),
     width: graphSpacingX,
@@ -115,6 +113,7 @@ function roundToMultipleOf(n: number, multiple: number): number {
 }
 
 function centerOfNode(node: GraphNode, layout: LayoutInfo) {
+  if (node.isPlaceholder) return node.x;
   return (
     node.x +
     roundToMultipleOf(
@@ -233,7 +232,7 @@ function buildGraphNested(
       hasChildren &&
       // Do not add a branch label on the parent of a nested parallel. Instead, show a big label on the nested parallel block.
       !isChainedParallel;
-    const isHidden = hasBranchLabel || hasParallel || isChainedParallel;
+    const isHidden = hasBranchLabel || hasChildren || isChainedParallel;
     const hasBigLabel =
       hasParallel ||
       (stage.type === "STAGE" && hasChildren && !hasBranchLabel) ||
@@ -364,6 +363,17 @@ function computeTailNodes(
   // Collect nodes in a Set. With two skipped nodes next to each other, we need to deduplicate them.
   const sourceNodes = new Set<GraphNode>();
   const skippedNodes = new Set<GraphNode>();
+  const resolveDestination = (node: GraphNode): GraphNode[] => {
+    if (node.hasParallel) {
+      // Connect directly to parallel children
+      return node.children;
+    }
+    if (node.children.length > 0) {
+      // Connect directly to 1st child, recusively resolve it.
+      return resolveDestination(node.children[0]);
+    }
+    return [node];
+  };
   const connect = (
     tailNodes: GraphNode[],
     destination: GraphNode,
@@ -376,9 +386,7 @@ function computeTailNodes(
         skippedNodes.add(node);
       }
     }
-    const destinationNodes = destination.hasParallel
-      ? destination.children // Connect directly to parallel children
-      : [destination];
+    const destinationNodes = resolveDestination(destination);
     if (!destinationNodes.some((n) => !n.isSkipped)) {
       for (const node of destinationNodes) skippedNodes.add(node);
       return;
@@ -392,7 +400,8 @@ function computeTailNodes(
     sourceNodes.clear();
     skippedNodes.clear();
   };
-  if (node.type !== "root") {
+  if (node.isParallel) {
+    // Non-parallel stages will have been connected already via resolveDestination.
     connect([node], node.children[0], true);
   }
   for (let i = 0; i < node.children.length - 1; i++) {
@@ -406,7 +415,10 @@ function computeTailNodes(
     );
   }
   const last = node.children[node.children.length - 1];
-  if (last.isSkipped || skippedNodes.size > 0 || sourceNodes.size > 0) {
+  if (last.isSkipped) {
+    return [...sourceNodes, ...skippedNodes, last];
+  }
+  if (skippedNodes.size > 0 || sourceNodes.size > 0) {
     throw new Error("bug: buildGraphNested did not add trailing dummy node");
   }
   return computeTailNodes(connections, last);

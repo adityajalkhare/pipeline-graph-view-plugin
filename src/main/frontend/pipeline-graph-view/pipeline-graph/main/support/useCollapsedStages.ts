@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   collapseSelectiveStages,
-  collectParentStageNames,
+  collectParentStageIds,
 } from "../NestedPipelineGraphLayout.ts";
 import { StageInfo } from "../PipelineGraphModel.tsx";
 
-function loadFromStorage(key: string): Set<string> {
+function loadFromStorage(key: string): Set<number> {
   try {
     const stored = window.localStorage.getItem(key);
     if (stored) {
-      return new Set(JSON.parse(stored) as string[]);
+      return new Set(JSON.parse(stored) as number[]);
     }
   } catch {
     // ignore
@@ -18,49 +18,49 @@ function loadFromStorage(key: string): Set<string> {
   return new Set();
 }
 
-function saveToStorage(key: string, names: Set<string>) {
+function saveToStorage(key: string, ids: Set<number>) {
   try {
-    window.localStorage.setItem(key, JSON.stringify([...names]));
+    window.localStorage.setItem(key, JSON.stringify([...ids]));
   } catch {
     // ignore
   }
 }
 
 /**
- * Extract the job path from the current page URL, stripping the run number
- * and any page suffix (e.g. "stages/").
- * /jenkins/job/my-pipeline/42/stages/ → /jenkins/job/my-pipeline
- * /jenkins/job/my-pipeline/42/ → /jenkins/job/my-pipeline
+ * Extract the job + build path from the current page URL, stripping any
+ * page suffix (e.g. "stages/") but keeping the build number.
+ * /jenkins/job/my-pipeline/42/stages/ → /jenkins/job/my-pipeline/42
+ * /jenkins/job/my-pipeline/42/ → /jenkins/job/my-pipeline/42
  */
-export function deriveJobPath(): string {
+export function deriveBuildPath(): string {
   const parts = window.location.pathname.replace(/\/+$/, "").split("/");
   for (let i = parts.length - 1; i >= 0; i--) {
     if (/^\d+$/.test(parts[i])) {
-      return parts.slice(0, i).join("/");
+      return parts.slice(0, i + 1).join("/");
     }
   }
   return window.location.pathname;
 }
 
 /**
- * Walk the original (uncollapsed) stage tree and return the names of any
+ * Walk the original (uncollapsed) stage tree and return the IDs of any
  * collapsed ancestors of the stage with the given id.
  */
 function findCollapsedAncestors(
   stages: StageInfo[],
   targetId: number,
-  collapsedNames: Set<string>,
-): string[] {
-  const result: string[] = [];
+  collapsedIds: Set<number>,
+): number[] {
+  const result: number[] = [];
 
-  function walk(nodes: StageInfo[], path: string[]): boolean {
+  function walk(nodes: StageInfo[], path: number[]): boolean {
     for (const stage of nodes) {
       if (stage.id === targetId) {
-        result.push(...path.filter((name) => collapsedNames.has(name)));
+        result.push(...path.filter((id) => collapsedIds.has(id)));
         return true;
       }
       if (stage.children.length > 0) {
-        if (walk(stage.children, [...path, stage.name])) {
+        if (walk(stage.children, [...path, stage.id])) {
           return true;
         }
       }
@@ -77,18 +77,18 @@ export function useCollapsedStages(
   stages: StageInfo[],
   selectedStageId?: number,
 ) {
-  const [collapsedStageNames, setCollapsedStageNames] = useState<Set<string>>(
-    () => loadFromStorage(storageKey),
+  const [collapsedStageIds, setCollapsedStageIds] = useState<Set<number>>(() =>
+    loadFromStorage(storageKey),
   );
 
   const toggleCollapseStage = useCallback(
-    (stageName: string) => {
-      setCollapsedStageNames((prev) => {
+    (stageId: number) => {
+      setCollapsedStageIds((prev) => {
         const next = new Set(prev);
-        if (next.has(stageName)) {
-          next.delete(stageName);
+        if (next.has(stageId)) {
+          next.delete(stageId);
         } else {
-          next.add(stageName);
+          next.add(stageId);
         }
         saveToStorage(storageKey, next);
         return next;
@@ -97,77 +97,57 @@ export function useCollapsedStages(
     [storageKey],
   );
 
-  const setCollapsedNames = useCallback(
-    (names: Set<string>) => {
-      setCollapsedStageNames(names);
-      saveToStorage(storageKey, names);
+  const setCollapsedIds = useCallback(
+    (ids: Set<number>) => {
+      setCollapsedStageIds(ids);
+      saveToStorage(storageKey, ids);
     },
     [storageKey],
   );
 
   const collapseAll = useCallback(() => {
-    setCollapsedNames(collectParentStageNames(stages));
-  }, [stages, setCollapsedNames]);
+    setCollapsedIds(collectParentStageIds(stages));
+  }, [stages, setCollapsedIds]);
 
   const expandAll = useCallback(() => {
-    setCollapsedNames(new Set());
-  }, [setCollapsedNames]);
+    setCollapsedIds(new Set());
+  }, [setCollapsedIds]);
 
   const hasCollapsibleStages = useMemo(
-    () => collectParentStageNames(stages).size > 0,
+    () => collectParentStageIds(stages).size > 0,
     [stages],
   );
 
   const effectiveStages = useMemo(
     () =>
-      collapsedStageNames.size > 0
-        ? collapseSelectiveStages(stages, collapsedStageNames)
+      collapsedStageIds.size > 0
+        ? collapseSelectiveStages(stages, collapsedStageIds)
         : stages,
-    [stages, collapsedStageNames],
+    [stages, collapsedStageIds],
   );
 
   // Auto-expand collapsed ancestors when a stage is selected (e.g. via
   // the tree sidebar or ?selected-node= URL param).
   useEffect(() => {
-    if (selectedStageId == null || collapsedStageNames.size === 0) return;
+    if (selectedStageId == null || collapsedStageIds.size === 0) return;
     const ancestors = findCollapsedAncestors(
       stages,
       selectedStageId,
-      collapsedStageNames,
+      collapsedStageIds,
     );
     if (ancestors.length === 0) return;
-    setCollapsedStageNames((prev) => {
+    setCollapsedStageIds((prev) => {
       const next = new Set(prev);
-      for (const name of ancestors) {
-        next.delete(name);
+      for (const id of ancestors) {
+        next.delete(id);
       }
       saveToStorage(storageKey, next);
       return next;
     });
   }, [selectedStageId]); // eslint-disable-line react-hooks/exhaustive-deps -- only react to selection changes
 
-  // Seed from admin default on first render when no localStorage state exists.
-  const adminDefaultApplied = useRef(false);
-  useEffect(() => {
-    if (adminDefaultApplied.current) return;
-    if (stages.length === 0) return;
-    if (window.localStorage.getItem(storageKey) != null) {
-      adminDefaultApplied.current = true;
-      return;
-    }
-    const prefEl = document.querySelector("[data-module='user-preferences']");
-    const collapseDefault =
-      prefEl instanceof HTMLElement
-        ? prefEl.dataset.preferenceCollapseNestedStages === "true"
-        : false;
-    if (collapseDefault) {
-      setCollapsedNames(collectParentStageNames(stages));
-    }
-    adminDefaultApplied.current = true;
-  }, [stages, storageKey, setCollapsedNames]);
-
   return {
-    collapsedStageNames,
+    collapsedStageIds,
     toggleCollapseStage,
     collapseAll,
     expandAll,

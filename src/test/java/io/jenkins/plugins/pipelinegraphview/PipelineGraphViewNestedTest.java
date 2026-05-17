@@ -219,7 +219,6 @@ class PipelineGraphViewNestedTest {
                 .displayPipelineOnJobPage()
                 .setPipelineGraphAsConsoleProvider()
                 .displayNamesOnStageViewByDefault()
-                .collapseNestedStagesByDefault()
                 .save();
 
         // With collapse enabled, nested stages should not appear in the graph,

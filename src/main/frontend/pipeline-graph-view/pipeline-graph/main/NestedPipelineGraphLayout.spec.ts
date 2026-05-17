@@ -21,7 +21,7 @@ import { DEFAULT_LOCALE } from "../../../common/i18n/index.ts";
 import { defaultMessages } from "../../../common/i18n/messages.ts";
 import {
   collapseSelectiveStages,
-  collectParentStageNames,
+  collectParentStageIds,
   nestedGraphLayout,
   removeFalseOptionalGraphNodeFlags,
 } from "./NestedPipelineGraphLayout.ts";
@@ -114,11 +114,12 @@ describe("NestedPipelineGraphLayout", () => {
         '[{"name":"Non-Parallel Stage","state":"success","id":"6","type":"STAGE","children":[]},{"name":"Parallel Stage","state":"success","id":"12","type":"STAGE","children":[{"name":"Branch A","state":"success","id":"16","type":"PARALLEL","children":[]},{"name":"Branch B","state":"success","id":"17","type":"PARALLEL","children":[]},{"name":"Branch C","state":"success","id":"18","type":"PARALLEL","children":[{"name":"Nested 1","state":"success","id":"26","type":"STAGE","children":[]},{"name":"Nested 2","state":"success","id":"42","type":"STAGE","children":[]}]}]},{"name":"Skipped stage","state":"skipped","id":"54","type":"STAGE","children":[]}]';
 
       it("should render layout with one branch collapsed", () => {
-        shouldMatchSelectiveSnapshot(raw, new Set(["Branch C"]));
+        // IDs are strings at runtime from JSON.parse, matching the actual API data shape
+        shouldMatchSelectiveSnapshot(raw, new Set(["18" as unknown as number]));
       });
 
       it("should render layout with top-level stage collapsed", () => {
-        shouldMatchSelectiveSnapshot(raw, new Set(["Parallel Stage"]));
+        shouldMatchSelectiveSnapshot(raw, new Set(["12" as unknown as number]));
       });
     });
   });
@@ -134,7 +135,7 @@ describe("NestedPipelineGraphLayout", () => {
           children: [],
         } as unknown as StageInfo,
       ];
-      const result = collapseSelectiveStages(stages, new Set(["Build"]));
+      const result = collapseSelectiveStages(stages, new Set([1]));
       expect(result).toHaveLength(1);
       expect(result[0].children).toHaveLength(0);
       expect(result[0].collapsedChildCount).toBeUndefined();
@@ -165,7 +166,7 @@ describe("NestedPipelineGraphLayout", () => {
           ],
         } as unknown as StageInfo,
       ];
-      const result = collapseSelectiveStages(stages, new Set(["Test"]));
+      const result = collapseSelectiveStages(stages, new Set([1]));
       expect(result[0].children).toHaveLength(0);
       expect(result[0].collapsedChildCount).toBe(2);
       expect(result[0].state).toBe(Result.failure);
@@ -189,7 +190,7 @@ describe("NestedPipelineGraphLayout", () => {
           ],
         } as unknown as StageInfo,
       ];
-      const result = collapseSelectiveStages(stages, new Set(["Other"]));
+      const result = collapseSelectiveStages(stages, new Set([999]));
       expect(result[0].children).toHaveLength(1);
       expect(result[0].collapsedChildCount).toBeUndefined();
     });
@@ -220,7 +221,7 @@ describe("NestedPipelineGraphLayout", () => {
           ],
         } as unknown as StageInfo,
       ];
-      const result = collapseSelectiveStages(stages, new Set(["Inner"]));
+      const result = collapseSelectiveStages(stages, new Set([2]));
       expect(result[0].children).toHaveLength(1);
       expect(result[0].children[0].children).toHaveLength(0);
       expect(result[0].children[0].collapsedChildCount).toBe(1);
@@ -259,7 +260,7 @@ describe("NestedPipelineGraphLayout", () => {
           ],
         } as unknown as StageInfo,
       ];
-      const result = collapseSelectiveStages(stages, new Set(["Root"]));
+      const result = collapseSelectiveStages(stages, new Set([1]));
       expect(result[0].collapsedChildCount).toBe(2);
     });
 
@@ -286,7 +287,7 @@ describe("NestedPipelineGraphLayout", () => {
     });
   });
 
-  describe("collectParentStageNames", () => {
+  describe("collectParentStageIds", () => {
     it("should return empty set for leaf-only stages", () => {
       const stages: StageInfo[] = [
         {
@@ -304,10 +305,10 @@ describe("NestedPipelineGraphLayout", () => {
           children: [],
         } as unknown as StageInfo,
       ];
-      expect(collectParentStageNames(stages).size).toBe(0);
+      expect(collectParentStageIds(stages).size).toBe(0);
     });
 
-    it("should collect top-level parent stage names", () => {
+    it("should collect top-level parent stage ids", () => {
       const stages: StageInfo[] = [
         {
           name: "Parent",
@@ -332,11 +333,11 @@ describe("NestedPipelineGraphLayout", () => {
           children: [],
         } as unknown as StageInfo,
       ];
-      const result = collectParentStageNames(stages);
-      expect(result).toEqual(new Set(["Parent"]));
+      const result = collectParentStageIds(stages);
+      expect(result).toEqual(new Set([1]));
     });
 
-    it("should collect nested parent stage names", () => {
+    it("should collect nested parent stage ids", () => {
       const stages: StageInfo[] = [
         {
           name: "Root",
@@ -362,8 +363,8 @@ describe("NestedPipelineGraphLayout", () => {
           ],
         } as unknown as StageInfo,
       ];
-      const result = collectParentStageNames(stages);
-      expect(result).toEqual(new Set(["Root", "Mid"]));
+      const result = collectParentStageIds(stages);
+      expect(result).toEqual(new Set([1, 2]));
     });
   });
 });
@@ -420,13 +421,10 @@ function shouldMatchSnapshot(raw: string, collapsed: boolean) {
   expect(graph).toMatchSnapshot();
 }
 
-function shouldMatchSelectiveSnapshot(
-  raw: string,
-  collapsedNames: Set<string>,
-) {
+function shouldMatchSelectiveSnapshot(raw: string, collapsedIds: Set<number>) {
   const stages = collapseSelectiveStages(
     JSON.parse(raw) as StageInfo[],
-    collapsedNames,
+    collapsedIds,
   );
   const graph = nestedGraphLayout(
     stages,

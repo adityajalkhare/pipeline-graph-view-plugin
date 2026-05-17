@@ -1,5 +1,9 @@
-import { CSSProperties, memo, MouseEvent } from "react";
+import { CSSProperties, memo, MouseEvent, useContext } from "react";
 
+import {
+  I18NContext,
+  LocalizedMessageKey,
+} from "../../../../common/i18n/index.ts";
 import { classNames } from "../../../../common/utils/classnames.ts";
 import LiveTotal from "../../../../common/utils/live-total.tsx";
 import {
@@ -32,8 +36,9 @@ function CollapseBadge({
 }: {
   stage: StageInfo | undefined;
   isCollapsed?: boolean;
-  onToggleCollapse?: (stageName: string) => void;
+  onToggleCollapse?: (stageId: number) => void;
 }) {
+  const messages = useContext(I18NContext);
   const childCount = getChildCount(stage);
   if (childCount <= 0) return null;
 
@@ -41,7 +46,7 @@ function CollapseBadge({
     e.stopPropagation();
     e.preventDefault();
     if (onToggleCollapse && stage) {
-      onToggleCollapse(stage.name);
+      onToggleCollapse(stage.id);
     }
   };
 
@@ -51,7 +56,11 @@ function CollapseBadge({
       onClick={handleClick}
       role="button"
       tabIndex={0}
-      title={isCollapsed ? "Expand nested stages" : "Collapse nested stages"}
+      title={
+        isCollapsed
+          ? messages.format(LocalizedMessageKey.expandNestedStages)
+          : messages.format(LocalizedMessageKey.collapseNestedStages)
+      }
     >
       ({childCount})
       <svg
@@ -80,7 +89,7 @@ interface RenderBigLabelProps {
   measuredHeight: number;
   isSelected: boolean;
   isCollapsed?: boolean;
-  onToggleCollapse?: (stageName: string) => void;
+  onToggleCollapse?: (stageId: number) => void;
 }
 
 export const BigLabel = memo(BigLabelImpl);
@@ -216,7 +225,7 @@ interface SmallLabelProps {
   layout: LayoutInfo;
   isSelected?: boolean;
   isCollapsed?: boolean;
-  onToggleCollapse?: (stageName: string) => void;
+  onToggleCollapse?: (stageId: number) => void;
 }
 
 export const SmallLabel = memo(SmallLabelImpl);
@@ -279,7 +288,7 @@ interface SequentialContainerLabelProps {
   details: NodeLabelInfo;
   layout: LayoutInfo;
   isCollapsed?: boolean;
-  onToggleCollapse?: (stageName: string) => void;
+  onToggleCollapse?: (stageId: number) => void;
 }
 
 export const SequentialContainerLabel = memo(SequentialContainerLabelImpl);

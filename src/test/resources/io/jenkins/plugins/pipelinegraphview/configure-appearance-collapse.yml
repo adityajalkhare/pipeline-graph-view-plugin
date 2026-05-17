@@ -5,4 +5,3 @@ appearance:
   pipelineGraphView:
     showGraphOnBuildPage: true
     showGraphOnJobPage: true
-    collapseNestedStages: true

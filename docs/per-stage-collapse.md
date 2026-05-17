@@ -23,17 +23,5 @@ the pipeline has at least one collapsible stage.
 ## State persistence
 
 Your collapsed/expanded choices are saved in the browser's localStorage and
-survive page refreshes. Each view (build page, graph overview) tracks its own
-state independently.
-
-## Admin default
-
-Admins can set the initial collapse state for all users under
-Manage Jenkins > Appearance > Pipeline Graph View by checking
-"Collapse nested stages by default". This also works through JCasC.
-
-When enabled, all parent stages start collapsed for users who haven't interacted
-with the collapse controls yet. Once a user expands or collapses any stage
-manually, their choice takes over and the admin default no longer applies.
-
-If the setting is off (the default), all stages start expanded.
+survive page refreshes. State is shared across views (build page, graph overview)
+for the same job and build number. Each build has its own independent state.

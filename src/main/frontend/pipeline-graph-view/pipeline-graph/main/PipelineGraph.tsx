@@ -51,7 +51,7 @@ export function PipelineGraph({
   selectedStage,
   collapsed,
   onStageSelect,
-  collapsedStageNames,
+  collapsedStageIds,
   onToggleCollapse,
   setMinScale,
   setInitialScale,
@@ -336,7 +336,7 @@ export function PipelineGraph({
             measuredHeight={measuredHeight}
             isSelected={selectedStage?.id === label.stage?.id}
             isCollapsed={
-              label.stage ? collapsedStageNames.has(label.stage.name) : false
+              label.stage ? collapsedStageIds.has(label.stage.id) : false
             }
             onToggleCollapse={onToggleCollapse}
           />
@@ -359,7 +359,7 @@ export function PipelineGraph({
             layout={fullLayout}
             isSelected={selectedStage?.id === label.stage?.id}
             isCollapsed={
-              label.stage ? collapsedStageNames.has(label.stage.name) : false
+              label.stage ? collapsedStageIds.has(label.stage.id) : false
             }
             onToggleCollapse={onToggleCollapse}
           />
@@ -371,7 +371,7 @@ export function PipelineGraph({
             details={label}
             layout={fullLayout}
             isCollapsed={
-              label.stage ? collapsedStageNames.has(label.stage.name) : false
+              label.stage ? collapsedStageIds.has(label.stage.id) : false
             }
             onToggleCollapse={onToggleCollapse}
           />
@@ -387,8 +387,8 @@ interface Props {
   selectedStage?: StageInfo;
   collapsed?: boolean;
   onStageSelect?: (nodeId: string) => void;
-  collapsedStageNames: Set<string>;
-  onToggleCollapse: (stageName: string) => void;
+  collapsedStageIds: Set<number>;
+  onToggleCollapse: (stageId: number) => void;
   setMinScale?: (value: number) => void;
   setInitialScale?: (value: number) => void;
 }

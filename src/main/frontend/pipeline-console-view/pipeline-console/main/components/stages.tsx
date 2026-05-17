@@ -1,6 +1,6 @@
 import "./stages.scss";
 
-import { useCallback, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 import {
   ReactZoomPanPinchContextState,
   TransformComponent,
@@ -10,11 +10,15 @@ import {
 } from "react-zoom-pan-pinch";
 
 import Tooltip from "../../../../common/components/tooltip.tsx";
+import {
+  I18NContext,
+  LocalizedMessageKey,
+} from "../../../../common/i18n/index.ts";
 import { classNames } from "../../../../common/utils/classnames.ts";
 import { PipelineGraph } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraph.tsx";
 import { StageInfo } from "../../../../pipeline-graph-view/pipeline-graph/main/PipelineGraphModel.tsx";
 import {
-  deriveJobPath,
+  deriveBuildPath,
   useCollapsedStages,
 } from "../../../../pipeline-graph-view/pipeline-graph/main/support/useCollapsedStages.ts";
 import { StageViewPosition } from "../providers/user-preference-provider.tsx";
@@ -31,14 +35,14 @@ export default function Stages({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
-    collapsedStageNames,
+    collapsedStageIds,
     toggleCollapseStage,
     collapseAll,
     expandAll,
     hasCollapsibleStages,
     effectiveStages,
   } = useCollapsedStages(
-    "pgv.collapsedStages." + deriveJobPath(),
+    "pgv.collapsedStages." + deriveBuildPath(),
     stages,
     selectedStage?.id,
   );
@@ -127,7 +131,7 @@ export default function Stages({
         <ZoomControls
           initialScale={initialScale}
           minScale={minScale}
-          collapsedStageNames={collapsedStageNames}
+          collapsedStageIds={collapsedStageIds}
           hasCollapsibleStages={hasCollapsibleStages}
           onCollapseAll={collapseAll}
           onExpandAll={expandAll}
@@ -137,7 +141,7 @@ export default function Stages({
           <PipelineGraph
             stages={effectiveStages}
             selectedStage={selectedStage}
-            collapsedStageNames={collapsedStageNames}
+            collapsedStageIds={collapsedStageIds}
             onToggleCollapse={toggleCollapseStage}
             setInitialScale={setInitialScale}
             setMinScale={setMinScale}
@@ -160,7 +164,7 @@ interface StagesProps {
 interface ZoomControlsProps {
   initialScale: number;
   minScale: number;
-  collapsedStageNames: Set<string>;
+  collapsedStageIds: Set<number>;
   hasCollapsibleStages: boolean;
   onCollapseAll: () => void;
   onExpandAll: () => void;
@@ -169,12 +173,13 @@ interface ZoomControlsProps {
 function ZoomControls({
   initialScale,
   minScale,
-  collapsedStageNames,
+  collapsedStageIds,
   hasCollapsibleStages,
   onCollapseAll,
   onExpandAll,
 }: ZoomControlsProps) {
   const { zoomIn, zoomOut, centerView } = useControls();
+  const messages = useContext(I18NContext);
   const [scale, setScale] = useState(initialScale);
   const handleTransformEffect = useCallback(
     (ref: ReactZoomPanPinchContextState) => setScale(ref.state.scale),
@@ -249,16 +254,16 @@ function ZoomControls({
       {hasCollapsibleStages && (
         <Tooltip
           content={
-            collapsedStageNames.size > 0
-              ? "Expand all stages"
-              : "Collapse all stages"
+            collapsedStageIds.size > 0
+              ? messages.format(LocalizedMessageKey.expandAllStages)
+              : messages.format(LocalizedMessageKey.collapseAllStages)
           }
         >
           <button
             className={"jenkins-button jenkins-button--tertiary"}
-            onClick={collapsedStageNames.size > 0 ? onExpandAll : onCollapseAll}
+            onClick={collapsedStageIds.size > 0 ? onExpandAll : onCollapseAll}
           >
-            {collapsedStageNames.size > 0 ? (
+            {collapsedStageIds.size > 0 ? (
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                 <path
                   fill="none"

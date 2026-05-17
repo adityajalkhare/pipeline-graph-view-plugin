@@ -17,7 +17,6 @@ public class PipelineGraphViewConfiguration extends GlobalConfiguration {
     private boolean showStageNames;
     private boolean showStageDurations;
     private boolean showGraphOnBuildPage;
-    private boolean collapseNestedStages;
 
     public PipelineGraphViewConfiguration() {
         load();
@@ -60,16 +59,6 @@ public class PipelineGraphViewConfiguration extends GlobalConfiguration {
     @DataBoundSetter
     public void setShowGraphOnBuildPage(boolean showGraphOnBuildPage) {
         this.showGraphOnBuildPage = showGraphOnBuildPage;
-        save();
-    }
-
-    public boolean isCollapseNestedStages() {
-        return collapseNestedStages;
-    }
-
-    @DataBoundSetter
-    public void setCollapseNestedStages(boolean collapseNestedStages) {
-        this.collapseNestedStages = collapseNestedStages;
         save();
     }
 

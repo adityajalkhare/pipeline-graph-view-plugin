@@ -192,13 +192,13 @@ function aggregateChildState(stage: StageInfo): Result {
 
 export function collapseSelectiveStages(
   stages: StageInfo[],
-  collapsedNames: Set<string>,
+  collapsedIds: Set<number>,
 ): StageInfo[] {
   return stages.map((stage) => {
     if (stage.children.length === 0) {
       return stage;
     }
-    if (collapsedNames.has(stage.name)) {
+    if (collapsedIds.has(stage.id)) {
       return {
         ...stage,
         children: [],
@@ -208,7 +208,7 @@ export function collapseSelectiveStages(
     }
     return {
       ...stage,
-      children: collapseSelectiveStages(stage.children, collapsedNames),
+      children: collapseSelectiveStages(stage.children, collapsedIds),
     };
   });
 }
@@ -220,18 +220,18 @@ function countLeafStages(stage: StageInfo): number {
   return stage.children.reduce((sum, child) => sum + countLeafStages(child), 0);
 }
 
-export function collectParentStageNames(stages: StageInfo[]): Set<string> {
-  const names = new Set<string>();
+export function collectParentStageIds(stages: StageInfo[]): Set<number> {
+  const ids = new Set<number>();
   function walk(list: StageInfo[]) {
     for (const stage of list) {
       if (stage.children.length > 0) {
-        names.add(stage.name);
+        ids.add(stage.id);
         walk(stage.children);
       }
     }
   }
   walk(stages);
-  return names;
+  return ids;
 }
 
 function collectCollapsedStages(

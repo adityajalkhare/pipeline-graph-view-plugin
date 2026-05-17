@@ -51,12 +51,6 @@ public class ManageAppearancePage extends JenkinsPage<ManageAppearancePage> {
         return this;
     }
 
-    public ManageAppearancePage collapseNestedStagesByDefault() {
-        log.info("Clicking on the 'Collapse nested stages by default' checkbox");
-        page.getByText("Collapse nested stages by default").click();
-        return this;
-    }
-
     public void save() {
         log.info("Saving the changes");
         Locator button = page.getByRole(

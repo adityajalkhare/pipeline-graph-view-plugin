@@ -14,7 +14,6 @@ class PipelineGraphViewConfigurationTest {
     @Test
     void defaultValues(JenkinsConfiguredWithCodeRule j) {
         PipelineGraphViewConfiguration config = PipelineGraphViewConfiguration.get();
-        assertFalse(config.isCollapseNestedStages());
         assertFalse(config.isShowGraphOnJobPage());
         assertFalse(config.isShowStageNames());
         assertFalse(config.isShowStageDurations());
@@ -24,17 +23,12 @@ class PipelineGraphViewConfigurationTest {
     @Test
     void setAndGet(JenkinsConfiguredWithCodeRule j) {
         PipelineGraphViewConfiguration config = PipelineGraphViewConfiguration.get();
-        config.setCollapseNestedStages(true);
-        assertTrue(config.isCollapseNestedStages());
-        config.setCollapseNestedStages(false);
-        assertFalse(config.isCollapseNestedStages());
     }
 
     @Test
     @ConfiguredWithCode("configure-appearance-collapse.yml")
     void jcascLoadsCollapseNestedStages(JenkinsConfiguredWithCodeRule j) {
         PipelineGraphViewConfiguration config = PipelineGraphViewConfiguration.get();
-        assertTrue(config.isCollapseNestedStages());
         assertTrue(config.isShowGraphOnBuildPage());
         assertTrue(config.isShowGraphOnJobPage());
     }

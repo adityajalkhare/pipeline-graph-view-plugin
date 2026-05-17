@@ -110,7 +110,7 @@ describe("BigLabel", () => {
     expect(screen.getByTitle("Expand nested stages")).toBeInTheDocument();
   });
 
-  it("fires onToggleCollapse with stage name on badge click", () => {
+  it("fires onToggleCollapse with stage id on badge click", () => {
     const toggle = vi.fn();
     const child = makeStage({ name: "Unit", id: 10 });
     const stage = makeStage({ children: [child] });
@@ -125,7 +125,7 @@ describe("BigLabel", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button"));
-    expect(toggle).toHaveBeenCalledWith("Build");
+    expect(toggle).toHaveBeenCalledWith(1);
   });
 
   it("shows collapsedChildCount for a collapsed stage without children array", () => {
@@ -184,7 +184,7 @@ describe("SmallLabel", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button"));
-    expect(toggle).toHaveBeenCalledWith("Build");
+    expect(toggle).toHaveBeenCalledWith(1);
   });
 });
 
@@ -242,7 +242,7 @@ describe("SequentialContainerLabel", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button"));
-    expect(toggle).toHaveBeenCalledWith("Build");
+    expect(toggle).toHaveBeenCalledWith(1);
   });
 
   it("shows collapsedChildCount for already-collapsed stage", () => {

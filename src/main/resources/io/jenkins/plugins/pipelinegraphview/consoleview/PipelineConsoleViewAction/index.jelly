@@ -25,10 +25,6 @@
                   data-permission-configure="${configPermission}"
         />
 
-        <template data-module="user-preferences"
-                  data-preference-collapse-nested-stages="${it.collapseNestedStages}"
-        />
-
         <div id="console-pipeline-root" data-current-run-path="${rootURL + '/' + it.buildUrl}"
                        data-previous-run-path="${it.previousBuildUrl != null ? rootURL + '/' + it.previousBuildUrl : null}"
                        data-user-locale="${request2.getLocale().toLanguageTag()}"/>

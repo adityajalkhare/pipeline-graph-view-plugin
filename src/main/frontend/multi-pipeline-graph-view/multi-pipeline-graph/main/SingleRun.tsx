@@ -64,8 +64,11 @@ export default function SingleRun({ run, currentJobPath }: SingleRunProps) {
     return layout;
   }
 
-  const { effectiveStages, collapsedStageNames, toggleCollapseStage } =
-    useCollapsedStages("pgv.collapsedStages." + currentJobPath, runInfo.stages);
+  const { effectiveStages, collapsedStageIds, toggleCollapseStage } =
+    useCollapsedStages(
+      "pgv.collapsedStages." + currentJobPath + run.id,
+      runInfo.stages,
+    );
 
   return (
     <div className="pgv-single-run">
@@ -83,7 +86,7 @@ export default function SingleRun({ run, currentJobPath }: SingleRunProps) {
         stages={effectiveStages}
         layout={getLayout()}
         collapsed
-        collapsedStageNames={collapsedStageNames}
+        collapsedStageIds={collapsedStageIds}
         onToggleCollapse={toggleCollapseStage}
       />
     </div>

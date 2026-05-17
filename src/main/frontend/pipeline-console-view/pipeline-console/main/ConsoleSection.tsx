@@ -67,12 +67,12 @@ export const ConsoleSection = memo(function ConsoleSection({
             d="M184 112l144 144-144 144"
           />
         </svg>
-        <span className="pgv-console-section__title">
+        <div className="pgv-console-section__title">
           {makeReactChildren(
             tokenizeANSIString(group.title),
             `section-title-${group.startIndex}`,
           )}
-        </span>
+        </div>
         <span className="pgv-console-section__count">
           {group.children.length}{" "}
           {group.children.length === 1 ? "line" : "lines"}

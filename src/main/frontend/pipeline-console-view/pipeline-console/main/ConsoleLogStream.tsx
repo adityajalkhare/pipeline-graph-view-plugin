@@ -120,6 +120,7 @@ export default function ConsoleLogStream({
   }, [currentRunPath]);
 
   const [boundaries, setBoundaries] = useState<ConsoleSectionBoundary[]>([]);
+  const logComplete = logBuffer.stopTailing ?? false;
   useEffect(() => {
     let cancelled = false;
     getConsoleSectionBoundaries(currentRunPath, stepId)
@@ -133,7 +134,7 @@ export default function ConsoleLogStream({
     return () => {
       cancelled = true;
     };
-  }, [currentRunPath, stepId]);
+  }, [currentRunPath, stepId, logComplete]);
 
   const sectionTree = useMemo(
     () =>

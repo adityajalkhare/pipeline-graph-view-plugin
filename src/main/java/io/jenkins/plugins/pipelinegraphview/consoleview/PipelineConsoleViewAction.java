@@ -26,7 +26,6 @@ import io.jenkins.plugins.pipelinegraphview.utils.PipelineStep;
 import io.jenkins.plugins.pipelinegraphview.utils.PipelineStepApi;
 import io.jenkins.plugins.pipelinegraphview.utils.PipelineStepList;
 import jakarta.servlet.ServletException;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -433,16 +432,14 @@ public class PipelineConsoleViewAction extends Tab {
             return;
         }
 
-        // Read raw plain text (not HTML) - annotators expect undecorated output.
-        // We buffer into a byte array because writeLogTo requires an OutputStream,
-        // then stream line-by-line through the processor to avoid a second full copy.
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        logText.writeLogTo(0L, baos);
-
+        // Stream log directly through the processor line-by-line to avoid
+        // buffering the entire log in memory.
         ConsoleSectionProcessor processor = new ConsoleSectionProcessor(
                 ConsoleSectionAnnotator.all().stream().toList());
-        List<ConsoleSectionProcessor.BoundaryEvent> events =
-                processor.process(new java.io.ByteArrayInputStream(baos.toByteArray()));
+        ConsoleSectionProcessor.LineProcessingOutputStream out = processor.createOutputStream();
+        logText.writeLogTo(0L, out);
+        out.close();
+        List<ConsoleSectionProcessor.BoundaryEvent> events = out.getEvents();
 
         rsp.setStatus(200);
         rsp.setContentType("application/json;charset=UTF-8");

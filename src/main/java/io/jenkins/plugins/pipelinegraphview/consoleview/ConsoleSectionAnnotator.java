@@ -15,9 +15,11 @@ import hudson.ExtensionPoint;
  *
  * <p>Implementations receive lines one at a time via {@link #detect(String)}
  * and return section boundary events. Annotator instances from {@code all()}
- * are shared singletons; the processor calls {@link #reset()} before each
- * log stream and synchronizes access. Implementations should keep state
- * in instance fields reset by {@link #reset()}.
+ * are shared singletons. The processor clones each annotator via
+ * {@link #clone()} so shared instances are never mutated concurrently,
+ * then calls {@link #reset()} before processing each log stream.
+ * Implementations should keep state in instance fields reset by
+ * {@link #reset()}.
  *
  * <p>Example:
  * <pre>
@@ -43,7 +45,7 @@ import hudson.ExtensionPoint;
  * }
  * </pre>
  */
-public abstract class ConsoleSectionAnnotator implements ExtensionPoint {
+public abstract class ConsoleSectionAnnotator implements ExtensionPoint, Cloneable {
 
     /**
      * Unique identifier for this annotator.
@@ -83,6 +85,19 @@ public abstract class ConsoleSectionAnnotator implements ExtensionPoint {
      */
     public void reset() {
         // Default no-op; subclasses override as needed.
+    }
+
+    /**
+     * Create a shallow copy of this annotator for per-request isolation.
+     * Subclasses with complex state should override this.
+     */
+    @Override
+    public ConsoleSectionAnnotator clone() {
+        try {
+            return (ConsoleSectionAnnotator) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("ConsoleSectionAnnotator must be Cloneable", e);
+        }
     }
 
     /**
